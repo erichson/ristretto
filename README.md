@@ -1,2 +1,2 @@
-Randomized Dimension Reduction Library
-**************************************
+ristretto: Randomized Dimension Reduction Library
+*************************************************

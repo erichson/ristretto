@@ -1,10 +1,10 @@
-# Randomized Dimension Reduction Library
+# ristretto: Randomized Dimension Reduction Library
 
 
-NAME ='DimLy'
+NAME ='ristretto'
 VERSION ='0.0.1'
-DESCRIPTION ='Randomized Dimension Reduction Library'
-URL ='https://github.com/Benli11/DimLy'
+DESCRIPTION ='ristretto: Randomized Dimension Reduction Library'
+URL ='https://github.com/Benli11/ristretto'
 AUTHER ='N. Benjamin Erichson'
 EMAIL ='erichson at uw dot edu'
 LICENSE ='GNU'
@@ -75,12 +75,14 @@ ext_modules = [ ]
 
 if use_cython:
     ext_modules += [
-        Extension("dimly._fhals_update", [ "dimly/nmf/_fhals_update.pyx" ]),
+	Extension("ristretto._fhals_update", [ "ristretto/nmf/_fhals_update.pyx" ]),
+        Extension("ristretto._rfhals_update", [ "ristretto/nmf/_rfhals_update.pyx" ]),
     ]
     cmdclass.update({ 'build_ext': build_ext })
 else:
     ext_modules += [
-        Extension("dimly._fhals_update", [ "dimly/nmf/_fhals_update.c" ]),
+        Extension("ristretto._fhals_update", [ "ristretto/nmf/_fhals_update.c" ]),
+        Extension("ristretto._rfhals_update", [ "ristretto/nmf/_rfhals_update.c" ]),
     ]
 
 
