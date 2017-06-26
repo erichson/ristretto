@@ -21,7 +21,7 @@ def cT(A):
 
 
 
-def rlu(A, permute=False, k=None, p=10, q=1, sdist='normal'):
+def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform'):
     """
     Randomized LU Decomposition.
     
@@ -151,23 +151,24 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='normal'):
     #If q > 0 perfrom q subspace iterations
     #Note: check_finite=False may give a performance gain
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~      
-#    s=1 #control parameter for number of orthogonalizations
-#    if q > 0:
-#        for i in np.arange( 1, q+1 ):
-#            if( (2*i-2) % s == 0 ):
-#                Y , _ = sci.linalg.qr( Y , mode='economic', check_finite=False, overwrite_a=True )
-#                        
-#            if( (2*i-1) % s == 0 ):
-#                Z , _ = sci.linalg.qr( fT( A ).dot( Y ) , mode='economic', check_finite=False, overwrite_a=True)
-#       
-#            Y = A.dot( Z )
-#        #End for
-#        del(Z)
-#     #End if       
-#        
-#    Q , _ = sci.linalg.qr( Y ,  mode='economic' , check_finite=False, overwrite_a=True ) 
-#    del(Y)
-    Q = Y
+    s=1 #control parameter for number of orthogonalizations
+    if q > 0:
+        for i in np.arange( 1, q+1 ):
+            if( (2*i-2) % s == 0 ):
+                Y , _ = sci.linalg.qr( Y , mode='economic', check_finite=False, overwrite_a=True )
+                        
+            if( (2*i-1) % s == 0 ):
+                Z , _ = sci.linalg.qr( fT( A ).dot( Y ) , mode='economic', check_finite=False, overwrite_a=True)
+       
+            Y = A.dot( Z )
+        #End for
+        del(Z)
+     #End if       
+        
+    Q , _ = sci.linalg.qr( Y ,  mode='economic' , check_finite=False, overwrite_a=True ) 
+    del(Y)
+
+
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Compute pivoted LU decompostion of the orthonormal basis matrix Q.
     # Q = P * L * U 
@@ -186,8 +187,12 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='normal'):
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Form smaller matrix B
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
-
-    B = sci.linalg.pinv(L_tilde).dot(A[r,:])
+    U, s, Vt = sci.linalg.svd( L_tilde ,  compute_uv=True,
+                              full_matrices=False, 
+                              overwrite_a=True,
+                              check_finite=False)
+    
+    B = (Vt.T*s**-1).dot(U.T).dot(A[r,:])
     
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -198,6 +203,8 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='normal'):
  
     #Return
     if permute == False:
+        #_, r ,_ = sci.sparse.find(P)
+        #_,c,_ = sci.sparse.find(C.T)        
         return  ( P, L_tilde.dot(fT(U)), fT(L), fT(C)) 
     
     else:
