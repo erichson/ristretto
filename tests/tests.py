@@ -90,9 +90,51 @@ class test_mf(TestCase):
 
 
 
+    def test_rlu_float64(self):
+        m, k = 100, 10
+        A = np.array(np.random.randn(m, k), np.float64)
+        A = A.dot(A.T)
+        A = A[:,0:50]
+        P, L, U, Q = rlu(A, permute=False, k=k, p=5, q=2)
+        Ak = P.dot(L.dot(U)).dot(Q)        
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
+        
+        assert percent_error < atol_float64  
+  
+		    
+    def test_rlu_complex128(self):
+        m, k = 100, 10
+        A = np.array(np.random.randn(m, k), np.float64) + 1j * np.array(np.random.randn(m, k), np.float64)
+        A = A.dot(A.conj().T)
+        A = A[:,0:50]
+        P, L, U, Q = rlu(A, permute=False, k=k, p=5, q=2)
+        Ak = P.dot(L.dot(U)).dot(Q)        
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
+        
+        assert percent_error < atol_float64 
 
-
-
+    def test_rlu_permute_float64(self):
+        m, k = 100, 10
+        A = np.array(np.random.randn(m, k), np.float64)
+        A = A.dot(A.T)
+        A = A[:,0:50]
+        L, U, = rlu(A, permute=True, k=k, p=5, q=2)
+        Ak = L.dot(U)        
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
+        
+        assert percent_error < atol_float64  
+  
+		    
+    def test_rlu_permute_complex128(self):
+        m, k = 100, 10
+        A = np.array(np.random.randn(m, k), np.float64) + 1j * np.array(np.random.randn(m, k), np.float64)
+        A = A.dot(A.conj().T)
+        A = A[:,0:50]
+        L, U= rlu(A, permute=True, k=k, p=5, q=2)
+        Ak = L.dot(U)        
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
+        
+        assert percent_error < atol_float64 
 #
 #******************************************************************************
 #
@@ -123,7 +165,6 @@ class test_nmf(TestCase):
         
 def suite():
     s = TestSuite()
-    s.addTest(test_nmf('test_rnmf_fhals'))
 
     
     return s
