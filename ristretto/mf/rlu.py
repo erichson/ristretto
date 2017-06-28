@@ -187,10 +187,10 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform'):
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Form smaller matrix B
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
-    U, s, Vt = sci.linalg.svd( L_tilde ,  compute_uv=True,
-                              full_matrices=False, 
-                              overwrite_a=True,
-                              check_finite=False)
+    #B, _, _, _ = np.linalg.lstsq(a=L_tilde, b=A[r,:] ) 
+    
+    U, s, Vt = sci.linalg.svd( L_tilde ,  compute_uv=True,full_matrices=False, 
+                              overwrite_a=True, check_finite=False)
     
     B = (Vt.T*s**-1).dot(U.T).dot(A[r,:])
     
