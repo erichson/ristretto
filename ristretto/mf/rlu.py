@@ -190,9 +190,9 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform'):
     #B, _, _, _ = np.linalg.lstsq(a=L_tilde, b=A[r,:] ) 
     
     U, s, Vt = sci.linalg.svd( L_tilde ,  compute_uv=True,full_matrices=False, 
-                              overwrite_a=True, check_finite=False)
+                              overwrite_a=False, check_finite=False)
     
-    B = (Vt.T*s**-1).dot(U.T).dot(A[r,:])
+    B = (fT(Vt)*s**-1).dot(fT(U)).dot(A[r,:])
     
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -209,7 +209,7 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform'):
     
     else:
         _, r ,_ = sci.sparse.find(P)
-        _,c,_ = sci.sparse.find(C.T)
+        _, c ,_ = sci.sparse.find(C)
 
         return ( L_tilde.dot(fT(U))[r,:], fT(L)[:,c] ) 
 
