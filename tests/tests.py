@@ -88,6 +88,25 @@ class test_mf(TestCase):
         
         assert percent_error < atol_float64 
 
+    def test_rsvd_single_float64(self):
+        m, k = 100, 10
+        A = np.array(np.random.randn(m, k), np.float64)
+        A = A.dot( A.T )
+        U, s, Vt = rsvd_single(A, k=k, p=5)
+        Ak = U.dot(np.diag(s).dot(Vt))
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
+        
+        assert percent_error < atol_float64
+           
+
+    def test_rsvd_single_complex128(self):
+        m, k = 100, 10
+        A = np.array(np.random.randn(m, k), np.float64) + 1j * np.array(np.random.randn(m, k), np.float64)
+        A = A.dot(A.conj().T)
+        U, s, Vh = rsvd_single(A, k=k, p=5)
+        Ak = U.dot(np.diag(s).dot(Vh))
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
+
 
 
     def test_rlu_float64(self):

@@ -158,7 +158,7 @@ def rsvd_single(A, k=None, p=10, sdist='uniform'):
     # Form a smaller matrix
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   
-    B = np.linalg.solve(a=T, b=U.T.dot(W))
+    B = sci.linalg.solve(a=T, b=fT(U).dot(W))
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Singular Value Decomposition
