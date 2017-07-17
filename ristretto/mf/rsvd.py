@@ -121,6 +121,15 @@ def rsvd(A, k=None, p=10, q=1, sdist='normal'):
     else:
         raise ValueError( "A.dtype is not supported" )
     
+    if k is None:
+        raise ValueError( "Target rank k is required." )
+
+    if k < 0:
+        raise ValueError( "Target rank k not valid." )
+        
+    if k > min(m,n):
+        k = min(m,n)       
+    
     if m < n:
         A = fT( A )
         m , n = A.shape 

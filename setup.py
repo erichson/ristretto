@@ -105,11 +105,11 @@ setup(
         'Development Status :: 4 - Beta',
 
         # Indicate who your project is intended for
-        'Intended Audience :: Researchers',
-        'Topic :: Randomized Linear Algebra :: Tensor Decompositions',
+        'Intended Audience :: Science/Research',
+        'Topic :: Scientific/Engineering :: Mathematics',
 
         # Pick your license as you wish (should match "license" above)
-        'License :: GNU',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
@@ -123,7 +123,7 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='randomized algorithms, dimension reduction, tensor decomposition',
+    keywords='randomized algorithms, dimension reduction, singular value decomposition, matrix approximations',
 
     #packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     packages=find_packages(exclude=['tests*']),
