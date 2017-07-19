@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/Benli11/ristretto.svg?branch=master)](https://travis-ci.org/Benli11/ristretto)
+
 ristretto: Randomized Dimension Reduction Library
 *************************************************
 
