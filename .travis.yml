@@ -16,11 +16,13 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
+  # conda install cython
+  conda install cython
   # Useful for debugging any issues with conda
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib nose setuptools
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy setuptools cython
   - source activate test-environment
   - python setup.py install
 
