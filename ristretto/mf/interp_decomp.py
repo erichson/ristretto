@@ -1,5 +1,5 @@
 """ 
-Randomized QB Decomposition
+Interpolative decomposition (ID)
 """
 # Author: N. Benjamin Erichson
 # License: GNU General Public License v3.0
@@ -28,13 +28,13 @@ def interp_decomp(A, k=None, mode='column', index_set=False):
     Algorithm for computing the low-rank ID 
     decomposition of a rectangular `(m, n)` matrix `A`, with target rank `k << min{m, n}`. 
     Input matrix is factored as `A = C * V`, using the column pivoted QR decomposition.
-    The factor matrix $\mathbf{C}$ is formed of a subset of columns of $\mathbf{A}$, 
-    also called the partial column skeleton. The factor matrix $\mathbf{V}$ contains 
-    a $k\times k$ identity matrix as a submatrix, and is well-conditioned. 
+    The factor matrix `C` is formed of a subset of columns of `A`, 
+    also called the partial column skeleton. The factor matrix `V` contains 
+    a `(k, k)` identity matrix as a submatrix, and is well-conditioned. 
 
     If `mode='row'`, then the input matrix is factored as `A = Z * R`, using the 
-    row pivoted QR decomposition. The factor matrix $\mathbf{C}$ is now formed as
-    a subset of rows of $\mathbf{A}$, also called the partial row skeleton.      
+    row pivoted QR decomposition. The factor matrix `R` is now formed as
+    a subset of rows of `A`, also called the partial row skeleton.      
     
     Parameters
     ----------
@@ -49,7 +49,7 @@ def interp_decomp(A, k=None, mode='column', index_set=False):
         'row' : ID using row pivoted QR.
 
     index_set: str `{'True', 'False'}`, default: `index_set='False'`.
-        'True' : Return column/row index set.     
+        'True' : Return column/row index set instead of `C` or `R`.     
         
     Returns
     -------
@@ -67,10 +67,6 @@ def interp_decomp(A, k=None, mode='column', index_set=False):
         R : array_like, shape `(k, n)`.
             Partial row skeleton.
 
-
-
-    J : array_like, shape `(k, n)`.
-        Column/row index set.
 
     Notes
     -----   
@@ -149,13 +145,13 @@ def interp_decomp(A, k=None, mode='column', index_set=False):
         if index_set==False:
             return ( C, V ) 
         else:
-            return ( C, V, P[0:k] ) 
+            return ( P[0:k], V  ) 
 
     if mode=='row':
         if index_set==False:
             return ( rT(V), rT(C) ) 
         else:
-            return ( rT(V), rT(C), P[0:k] )
+            return ( rT(V), P[0:k]  )
            
 
 
@@ -166,14 +162,14 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal', index_se
     
     Algorithm for computing the approximate low-rank ID 
     decomposition of a rectangular `(m, n)` matrix `A`, with target rank `k << min{m, n}`. 
-    The input matrix is factored as `A = C * V`. The factor matrix $\mathbf{C}$ is formed 
-    of a subset of columns of $\mathbf{A}$, also called the partial column skeleton. 
-    The factor matrix $\mathbf{V}$ contains a $k\times k$ identity matrix as a submatrix,
+    The input matrix is factored as `A = C * V`. The factor matrix `C`is formed 
+    of a subset of columns of `A`, also called the partial column skeleton. 
+    The factor matrix `V`contains a `(k, k)` identity matrix as a submatrix,
     and is well-conditioned. 
     
     If `mode='row'`, then the input matrix is factored as `A = Z * R`, using the 
-    row pivoted QR decomposition. The factor matrix $\mathbf{C}$ is now formed as
-    a subset of rows of $\mathbf{A}$, also called the partial row skeleton.      
+    row pivoted QR decomposition. The factor matrix `R` is now formed as
+    a subset of rows of `A`, also called the partial row skeleton.      
 
     The quality of the approximation can be controlled via the oversampling 
     parameter `p` and the parameter `q` which specifies the number of 
@@ -204,7 +200,7 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal', index_se
         'normal' : Random test matrix with normal distributed elements.     
 
     index_set: str `{'True', 'False'}`, default: `index_set='False'`.
-        'True' : Return column/row index set.
+        'True' : Return column/row index set instead of `C` or `R`. 
     
     Returns
     -------
@@ -221,10 +217,7 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal', index_se
         
         R : array_like, shape `(k, n)`.
             Partial row skeleton.        
-        
 
-    J : array_like, shape `(k, n)`.
-        Column/row index set.
 
     Notes
     -----   
@@ -330,26 +323,25 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal', index_se
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Deterministic ID
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-    _, V, P = interp_decomp(Y, k=k, mode='column', index_set=True)
+    J, V = interp_decomp(Y, k=k, mode='column', index_set=True)
     
-    
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # Return ID
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~     
+    J = J[0:k]     
+   
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Return ID
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+    
     if mode=='column':
         if index_set==False:
-            return ( A[:,P[0:k]], V ) 
+            return ( A[:,J], V ) 
         else:
-            return ( A[:,P[0:k]], V, P[0:k] ) 
+            return ( J, V ) 
 
     if mode=='row':
         if index_set==False:
-            return ( rT(V), rT(A[:,P[0:k]]) ) 
+            return ( rT(V), rT(A[:,J]) ) 
         else:
-            return ( rT(V), rT(A[:,P[0:k]]), P[0:k] )
+            return ( rT(V), J )
            
 
 
@@ -535,23 +527,21 @@ def rinterp_decomp_qb(A, k=None, mode='column', p=10, q=1, sdist='normal', index
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Deterministic ID
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-    _, V, P = interp_decomp(B, k=k, mode='column', index_set=True)
+    J, V = interp_decomp(B, k=k, mode='column', index_set=True)
     
-    
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # Return ID
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~     
+    J = J[0:k]   
+ 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Return ID
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
     if mode=='column':
         if index_set==False:
-            return ( A[:,P[0:k]], V ) 
+            return ( A[:,J], V ) 
         else:
-            return ( A[:,P[0:k]], V, P[0:k] ) 
+            return ( J, V ) 
 
     if mode=='row':
         if index_set==False:
-            return ( rT(V), rT(A[:,P[0:k]]) ) 
+            return ( rT(V), rT(A[:,J]) ) 
         else:
-            return ( rT(V), rT(A[:,P[0:k]]), P[0:k] )
+            return ( rT(V), J  )
