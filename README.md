@@ -1,5 +1,5 @@
-![ristretto](https://raw.githubusercontent.com/Benli11/ristretto/master/ristretto.png)
-<img src="https://raw.githubusercontent.com/Benli11/ristretto/master/ristretto.png" width="600">
+<img src="https://raw.githubusercontent.com/Benli11/ristretto/master/ristretto.png" width="550">
+
 The idea of randomized low-rank matrix approximations is to restrict the high-dimensional input data matrix to a low-dimensional space. In plain words, the aim is to find a smaller matrix which captures the essential information of the input matrix. This smaller matrix can then be used to extract (learn) the coherent structure of the data. Probabilistic algorithms considerably reduce the computational demands of traditional (deterministic) algorithms, and the computational advantage becomes pronounced with increasing matrix dimensions.
 
 ristretto: Package Overview [![Build Status](https://travis-ci.org/Benli11/ristretto.svg?branch=master)](https://travis-ci.org/Benli11/ristretto)
