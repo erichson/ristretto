@@ -40,5 +40,5 @@ After successfully installing the ristretto library, the unit tests can be run b
 *************
 * [N. Benjamin Erichson, et al. `Randomized Matrix Decompositions using R.' (2016)](http://arxiv.org/abs/1608.02148)
 * [Sergey Voronin, Per-Gunnar Martinsson. `RSVDPACK: Subroutines for computing partial singular value decompositions via randomized sampling on single core, multi core, and GPU architectures.' (2015)](https://arxiv.org/abs/1502.05366)
-* [Nathan Halko, et al. 1Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions.' (2011)](https://arxiv.org/abs/0909.4061)
+* [Nathan Halko, et al. Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions.' (2011)](https://arxiv.org/abs/0909.4061)
 
