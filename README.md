@@ -5,29 +5,33 @@ The idea of randomized low-rank matrix approximations is to restrict the high-di
 # ristretto: Package Overview [![Build Status](https://travis-ci.org/Benli11/ristretto.svg?branch=master)](https://travis-ci.org/Benli11/ristretto)
 *************************************************
 
-The Python software library ``ristretto`` provides a collection of randomized matrix algorithms which can be used for dimension reduction. Overview of implemented routines:
-* Randomized singular value decomposition (rsvd).
-* Randomized single-view singular value decomposition (rsvd_single).
-* Randomized interpolative decomposition (rinterp_decomp).
-* Randomized CUR decomposition (rcur).
-* Randomized LU decompositoin (rlu).
-* Randomized nonnegative matrix factorization (rnmf_fhals).
+The Python software library ristretto provides a collection of randomized matrix algorithms which can be used for dimension reduction. Overview of implemented routines:
+* Randomized singular value decomposition: ``from ristretto.mf import rsvd``.
+* Randomized single-view singular value decomposition: ``from ristretto.mf import rsvd_single``.
+* Randomized interpolative decomposition:``from ristretto.mf import rinterp_decomp``.
+* Randomized CUR decomposition: ``from ristretto.mf import rcur``.
+* Randomized LU decompositoin: ``from ristretto.mf import rlu``.
+* Randomized nonnegative matrix factorization: ``from ristretto.nmf import rnmf_fhals``.
 
-# Installation
+# Get started
 ******************
 
-### Quick installation via pip 
-To install the latest stable release of ``ristretto`` run:
+### Quick Installation via PIP 
+To install the latest stable release of ristretto run:
+
 ``pip install scikit-cuda``
 
-### Installation via git 
-To get the latest stable and development versions of ``ristretto`` run:
+### Obtaining the Latest Software via GIT 
+To get the latest stable and development versions of ristretto run:
+
 ``git clone https://github.com/Benli11/ristretto``
 
 Then, to build and install the package, run from within the main directory in the release:
+
 ``python setup.py install``
 
-After successfully installing the ``ristretto`` library, the unit tests can be run by:
+After successfully installing the ristretto library, the unit tests can be run by:
+
 ``python setup.py test``
 
 
