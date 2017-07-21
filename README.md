@@ -1,6 +1,6 @@
 ![ristretto](https://raw.githubusercontent.com/Benli11/ristretto/master/ristretto.png)
 
-Package Description
+Package Description [![Build Status](https://travis-ci.org/Benli11/ristretto.svg?branch=master)](https://travis-ci.org/Benli11/ristretto)
 *************************************************
 
 Ristretto means 'limited' or 'restricted' in Italian, and it is traditionally a short shot of espresso. The taste is predominate by the faster-to-extract compounds, which are extracted by forcing a small amount of water under highy pressure through ground coffee beans.
@@ -13,7 +13,7 @@ The software library ``ristretto`` provides a collection of randomized matrix al
 * Randomized LU decompositoin (rlu).
 * Randomized nonnegative matrix factorization (rnmf_fhals).
 
-[![Build Status](https://travis-ci.org/Benli11/ristretto.svg?branch=master)](https://travis-ci.org/Benli11/ristretto)
+
 
 Installation
 ************
