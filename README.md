@@ -1,7 +1,4 @@
-..  image:: https://raw.githubusercontent.com/Benli11/ristretto/master/ristretto.png
-   :alt: ristretto
-
-[![Build Status](https://travis-ci.org/Benli11/ristretto.svg?branch=master)](https://travis-ci.org/Benli11/ristretto)
+![ristretto](https://raw.githubusercontent.com/Benli11/ristretto/master/ristretto.png)
 
 Package Description
 *************************************************
@@ -16,6 +13,7 @@ The software library ``ristretto`` provides a collection of randomized matrix al
 * Randomized LU decompositoin (rlu).
 * Randomized nonnegative matrix factorization (rnmf_fhals).
 
+[![Build Status](https://travis-ci.org/Benli11/ristretto.svg?branch=master)](https://travis-ci.org/Benli11/ristretto)
 
 Installation
 ************
