@@ -1,6 +1,9 @@
+..  image:: https://raw.githubusercontent.com/Benli11/ristretto/master/ristretto.png
+   :alt: ristretto
+
 [![Build Status](https://travis-ci.org/Benli11/ristretto.svg?branch=master)](https://travis-ci.org/Benli11/ristretto)
 
-ristretto: Randomized Dimension Reduction Library
+Package Description
 *************************************************
 
 Ristretto means 'limited' or 'restricted' in Italian, and it is traditionally a short shot of espresso. The taste is predominate by the faster-to-extract compounds, which are extracted by forcing a small amount of water under highy pressure through ground coffee beans.
