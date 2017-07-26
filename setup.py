@@ -15,7 +15,7 @@ LICENSE ='GNU'
 try:
     from setuptools import setup, find_packages
 except ImportError:
-    print "The package 'setuptools' is required!"
+    print("The package 'setuptools' is required!")
 
 from distutils.command.clean import clean as Clean
 from distutils.core import setup
@@ -85,7 +85,8 @@ else:
         Extension("ristretto._rfhals_update", [ "ristretto/nmf/_rfhals_update.c" ]),
     ]
 
-
+with open("requirements.txt", "r") as f:
+    required = f.readlines()
 
 setup(
     name = NAME,
@@ -95,6 +96,7 @@ setup(
     author = AUTHER,
     author_email = EMAIL,
     license = LICENSE,
+    required=required,
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[

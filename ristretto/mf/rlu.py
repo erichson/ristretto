@@ -5,7 +5,7 @@ Randomized LU Decomposition
 # License: GNU General Public License v3.0
 
 
-from __future__ import division
+
 import numpy as np
 import scipy as sci
 from scipy import linalg
@@ -182,7 +182,7 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform'):
     # Truncate L_tilde
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 
-    L_tilde = L_tilde[:,xrange(k)]
+    L_tilde = L_tilde[:,range(k)]
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Form smaller matrix B
