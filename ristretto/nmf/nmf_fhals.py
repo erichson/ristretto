@@ -5,6 +5,7 @@ Nonnegative Matrix Factorization
 # License: GNU General Public License v3.0
 
 
+from __future__ import division
 
 import numpy as np
 import scipy as sci
@@ -148,7 +149,7 @@ def nmf_fhals(A, k, init='normal', tol=1e-4, maxiter=100, verbose=False):
         fitchange = violation / violation_init
         
         if verbose == True:
-            print(('Iteration: %s fit: %s, fitchange: %s' %(niter, violation, fitchange)))        
+            print('Iteration: %s fit: %s, fitchange: %s' %(niter, violation, fitchange))        
 
         if fitchange <= tol:
             break
@@ -159,6 +160,6 @@ def nmf_fhals(A, k, init='normal', tol=1e-4, maxiter=100, verbose=False):
     # Return factor matrices
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     if verbose == True:
-        print(('Final Iteration: %s fit: %s' %(niter, violation))) 
+        print('Final Iteration: %s fit: %s' %(niter, violation)) 
         
     return( W, Ht.T )

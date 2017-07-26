@@ -5,6 +5,7 @@ Nonnegative Matrix Factorization
 # License: GNU General Public License v3.0
 
 
+from __future__ import division
 
 import numpy as np
 import scipy as sci
@@ -187,7 +188,7 @@ def rnmf_fhals(A, k, p=20, q=2, init='normal', tol=1e-4, maxiter=100, verbose=Fa
             fitold = fit
             
             if verbose == True:
-                print(('Iteration: %s fit: %s, fitchange: %s' %(niter, fit, fitchange)))        
+                print('Iteration: %s fit: %s, fitchange: %s' %(niter, fit, fitchange))        
             #End if        
  
             if niter > 1 and (fit <= -5 or fitchange <= tol):      
@@ -201,6 +202,6 @@ def rnmf_fhals(A, k, p=20, q=2, init='normal', tol=1e-4, maxiter=100, verbose=Fa
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     if verbose == True:
         fit = np.log10(sci.linalg.norm(A - (Q.T.dot(W)).dot( Ht.T)))
-        print(('Final Iteration: %s fit: %s' %(niter, fit))) 
+        print('Final Iteration: %s fit: %s' %(niter, fit)) 
         
     return( W, Ht.T )
