@@ -5,7 +5,7 @@ Nonnegative Matrix Factorization
 # License: GNU General Public License v3.0
 
 
-from __future__ import division
+from __future__ import division, range
 
 import numpy as np
 import scipy as sci
