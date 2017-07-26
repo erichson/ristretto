@@ -19,7 +19,7 @@ The Python software library ristretto provides a collection of randomized matrix
 ### Quick Installation via PIP 
 To install the latest stable release of ristretto run:
 
-``pip install scikit-cuda``
+``pip install ristretto``
 
 ### Obtaining the Latest Software via GIT 
 To get the latest stable and development versions of ristretto run:
