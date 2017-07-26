@@ -6,6 +6,7 @@ Nonnegative Matrix Factorization
 
 
 from __future__ import division
+
 import numpy as np
 import scipy as sci
 from scipy import linalg
@@ -119,7 +120,7 @@ def rnmf_fhals(A, k, p=20, q=2, init='normal', tol=1e-4, maxiter=100, verbose=Fa
     
     #If q > 0 perfrom q subspace iterations  
     if q > 0:
-        for i in xrange(q):
+        for i in range(q):
             Y , _ = sci.linalg.qr( Y, mode='economic', check_finite=False, overwrite_a=True)
             Z , _ = sci.linalg.qr( A.T.dot(Y), mode='economic', check_finite=False, overwrite_a=True)
             Y = A.dot( Z )
@@ -155,7 +156,7 @@ def rnmf_fhals(A, k, p=20, q=2, init='normal', tol=1e-4, maxiter=100, verbose=Fa
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
     Wtemp = np.empty(W.shape)
     
-    for niter in xrange(maxiter):
+    for niter in range(maxiter):
 
         # Pointer to updated factor matrix 
         if niter != 0: W = Wtemp    

@@ -4,8 +4,8 @@ Randomized Singular Value Decomposition
 # Author: N. Benjamin Erichson
 # License: GNU General Public License v3.0
 
-
 from __future__ import division
+
 import numpy as np
 import scipy as sci
 from scipy import linalg
@@ -175,9 +175,9 @@ def rsvd_single(A, k=None, p=10, sdist='uniform'):
 
     #Return Trunc
     if flipped==True:
-        return ( fT( Vt )[ : ,  range( k ) ] , s[ range( k ) ] , fT(U)[ range( k ), : ] ) 
+        return ( fT( Vt )[ : ,  list(range( k)) ] , s[ list(range( k)) ] , fT(U)[ list(range( k)), : ] ) 
     else: 
-        return ( U[ : , range( k ) ] , s[ range( k ) ] , Vt[ range( k ) , : ] ) 
+        return ( U[ : , list(range( k)) ] , s[ list(range( k)) ] , Vt[ list(range( k)) , : ] ) 
 
     
 

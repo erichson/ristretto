@@ -4,8 +4,8 @@ CUR-ID
 # Author: N. Benjamin Erichson
 # License: GNU General Public License v3.0
 
-
 from __future__ import division
+
 import numpy as np
 import scipy as sci
 from scipy import linalg

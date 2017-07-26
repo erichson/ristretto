@@ -15,7 +15,7 @@ LICENSE ='GNU'
 try:
     from setuptools import setup, find_packages
 except ImportError:
-    print "The package 'setuptools' is required!"
+    print("The package 'setuptools' is required!")
 
 from distutils.command.clean import clean as Clean
 from distutils.core import setup
@@ -85,7 +85,8 @@ else:
         Extension("ristretto._rfhals_update", [ "ristretto/nmf/_rfhals_update.c" ]),
     ]
 
-
+with open("requirements.txt", "r") as f:
+    required = f.readlines()
 
 setup(
     name = NAME,
@@ -95,6 +96,7 @@ setup(
     author = AUTHER,
     author_email = EMAIL,
     license = LICENSE,
+    required=required,
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
@@ -111,15 +113,9 @@ setup(
         # Pick your license as you wish (should match "license" above)
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
 
-        # Specify the Python versions you support here. In particular, ensure
-        # that you indicate whether you support Python 2, Python 3 or both.
-        #'Programming Language :: Python :: 2',
-        #'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
-        #'Programming Language :: Python :: 3',
-        #'Programming Language :: Python :: 3.2',
-        #'Programming Language :: Python :: 3.3',
-        #'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
 
     # What does your project relate to?

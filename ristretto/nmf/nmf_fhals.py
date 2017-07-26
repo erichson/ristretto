@@ -6,6 +6,7 @@ Nonnegative Matrix Factorization
 
 
 from __future__ import division
+
 import numpy as np
 import scipy as sci
 from scipy import linalg
@@ -121,7 +122,7 @@ def nmf_fhals(A, k, init='normal', tol=1e-4, maxiter=100, verbose=False):
     #   -> break if fit <-5 or fit_change < tol
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
     
-    for niter in xrange(maxiter): 
+    for niter in range(maxiter): 
         violation = 0.0
         
         # Update factor matrix H
