@@ -5,6 +5,7 @@ import scipy as sci
 from ristretto import *
 from ristretto.nmf import *
 from ristretto.mf import *
+from ristretto.dmd import *
 from ristretto.util import *
 
 
@@ -107,7 +108,13 @@ class test_mf(TestCase):
         Ak = U.dot(np.diag(s).dot(Vh))
         percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
 
-
+    def test_rsvd_single_orthogonal_complex128(self):
+        m, k = 100, 10
+        A = np.array(np.random.randn(m, k), np.float64) + 1j * np.array(np.random.randn(m, k), np.float64)
+        A = A.dot(A.conj().T)
+        U, s, Vh = rsvd_single(A, k=k, p=5, sdist='orthogonal')
+        Ak = U.dot(np.diag(s).dot(Vh))
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
 
     def test_rlu_float64(self):
         m, k = 100, 10
@@ -323,7 +330,83 @@ class test_nmf(TestCase):
 #
 #******************************************************************************
 #
+  
+
+class test_dmd(TestCase):
+    def setUp(self):
+        np.random.seed(123)        
         
+    def test_dmd(self):
+        # Define time and space discretizations
+        x=np.linspace( -10, 10, 100)
+        t=np.linspace(0, 8*np.pi , 60) 
+        dt=t[2]-t[1]
+        X, T = np.meshgrid(x,t)
+        # Create two patio-temporal patterns
+        F1 = 0.5* np.cos(X)*(1.+0.* T)
+        F2 = ( (1./np.cosh(X)) * np.tanh(X)) *(2.*np.exp(1j*2.8*T))
+        A = np.array((F1+F2).T, order='C')
+        
+        Fmodes, b, V, omega = dmd(A, k=2, modes='standard', return_amplitudes=True, return_vandermonde=True)
+        Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
+        assert np.allclose(A, Atilde, atol_float64)   
+        
+        Fmodes, b, V, omega = dmd(A, modes='standard', return_amplitudes=True, return_vandermonde=True)
+        Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
+        assert np.allclose(A, Atilde, atol_float64)          
+
+        Fmodes, b, V, omega = dmd(A, modes='exact', return_amplitudes=True, return_vandermonde=True)
+        Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
+        assert np.allclose(A, Atilde, atol_float64)          
+        
+
+
+    def test_rdmd(self):
+        # Define time and space discretizations
+        x=np.linspace( -10, 10, 100)
+        t=np.linspace(0, 8*np.pi , 60) 
+        dt=t[2]-t[1]
+        X, T = np.meshgrid(x,t)
+        # Create two patio-temporal patterns
+        F1 = 0.5* np.cos(X)*(1.+0.* T)
+        F2 = ( (1./np.cosh(X)) * np.tanh(X)) *(2.*np.exp(1j*2.8*T))
+        A = np.array((F1+F2).T, order='C')
+        
+        Fmodes, b, V, omega = rdmd(A, k=2, p=10, q=2, sdist='uniform', return_amplitudes=True, return_vandermonde=True)
+        Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
+        assert np.allclose(A, Atilde, atol_float64) 
+
+        Fmodes, b, V, omega = rdmd(A, k=2, p=10, q=2, sdist='normal', return_amplitudes=True, return_vandermonde=True)
+        Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
+        assert np.allclose(A, Atilde, atol_float64) 
+
+
+    def test_rdmd_single(self):
+        # Define time and space discretizations
+        x=np.linspace( -10, 10, 100)
+        t=np.linspace(0, 8*np.pi , 60) 
+        dt=t[2]-t[1]
+        X, T = np.meshgrid(x,t)
+        # Create two patio-temporal patterns
+        F1 = 0.5* np.cos(X)*(1.+0.* T)
+        F2 = ( (1./np.cosh(X)) * np.tanh(X)) *(2.*np.exp(1j*2.8*T))
+        A = np.array((F1+F2).T, order='C')
+        
+        Fmodes, b, V, omega = rdmd_single(A, k=2, p=10, l=20, sdist='uniform', return_amplitudes=True, return_vandermonde=True)
+        Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
+        assert np.allclose(A, Atilde, atol_float64) 
+
+        Fmodes, b, V, omega = rdmd_single(A, k=2, p=10, l=20, sdist='orthogonal', return_amplitudes=True, return_vandermonde=True)
+        Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
+        assert np.allclose(A, Atilde, atol_float64) 
+
+
+
+
+#
+#******************************************************************************
+#
+      
 def suite():
     s = TestSuite()
 
