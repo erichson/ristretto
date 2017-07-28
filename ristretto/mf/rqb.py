@@ -120,12 +120,12 @@ def rqb(A, k=None, p=10, q=1, sdist='normal'):
     if sdist=='uniform':   
         Omega = np.array( sci.random.uniform( -1 , 1 , size=( n, k+p ) ) , dtype = dat_type ) 
         if isreal==False: 
-            Omega += 1j * sci.array( sci.random.uniform(-1 , 1 , size=( n, k+p  ) ) , dtype = dat_type )
+            Omega += 1j * sci.array( sci.random.uniform(-1 , 1 , size=( n, k+p  ) ) , dtype = real_type )
       
     elif sdist=='normal':   
         Omega = np.array( sci.random.standard_normal( size=( n, k+p  ) ) , dtype = dat_type ) 
         if isreal==False: 
-            Omega += 1j * sci.array( sci.random.standard_normal( size=( n, k+p  ) ) , dtype = dat_type )     
+            Omega += 1j * sci.array( sci.random.standard_normal( size=( n, k+p  ) ) , dtype = real_type )     
 
     else: 
         raise ValueError('Sampling distribution is not supported.')    

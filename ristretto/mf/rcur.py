@@ -13,14 +13,14 @@ import scipy.sparse.linalg as scislin
  
 from . interp_decomp import interp_decomp, rinterp_decomp
 
+
 #matrix transpose for real matricies
 def rT(A): 
     return A.T
     
 #matrix transpose for complex matricies
 def cT(A): 
-    return A.conj().T      
-
+    return A.conj().T    
 
 
 

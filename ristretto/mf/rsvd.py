@@ -202,9 +202,9 @@ def rsvd(A, k=None, p=10, q=1, sdist='uniform'):
 
     #Return Trunc
     if flipped==True:
-        return ( fT( Vt )[ : ,  list(range( k)) ] , s[ list(range( k)) ] , fT(U)[ list(range( k)), : ] ) 
+        return ( fT( Vt )[ : ,  0:k] , s[ 0:k ] , fT(U)[ 0:k, : ] ) 
     else: 
-        return ( U[ : , list(range( k)) ] , s[ list(range( k)) ] , Vt[ list(range( k)) , : ] ) 
+        return ( U[ : , 0:k ] , s[ 0:k ] , Vt[ 0:k , : ] ) 
 
     
 
