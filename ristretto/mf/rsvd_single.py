@@ -21,7 +21,7 @@ def cT(A):
 
 
 
-def rsvd_single(A, k=None, p=10, sdist='uniform'):
+def rsvd_single(A, k=None, p=10, l=None, sdist='uniform'):
     """
     Randomized Singular Value Decomposition Single-View.
     
@@ -44,12 +44,17 @@ def rsvd_single(A, k=None, p=10, sdist='uniform'):
         Target rank.
     
     p : integer, default: `p=10`.
-        Parameter to control oversampling.
-                    
-    sdist : str `{'uniform', 'normal'}`, default: `sdist='uniform'`.
-        'uniform' : Random test matrix with uniform distributed elements.
+        Parameter to control oversampling of column space.
         
-        'normal' : Random test matrix with normal distributed elements.     
+    l : integer, default: `l=2*p`.
+        Parameter to control oversampling of row space.        
+                    
+    sdist : str `{'uniform', 'normal', 'orthogonal'}`, default: `sdist='uniform'`.
+        'uniform' : Random test matrices with uniform distributed elements.
+        
+        'normal' : Random test matrices with normal distributed elements.     
+
+        'orthogonal' : Orthogonalized random test matrices with uniform distributed elements.     
 
     
     Returns
@@ -66,9 +71,6 @@ def rsvd_single(A, k=None, p=10, sdist='uniform'):
 
     Notes
     -----   
-    * Add additional parameter to allow different oversampling parameters for
-    the left and right random test matrix. 
-
     * Add option for sparse random test matrices.
     
     * Modify algorithm to allow for the streaming model. 
@@ -118,22 +120,36 @@ def rsvd_single(A, k=None, p=10, sdist='uniform'):
     else: 
        flipped = False 
     
+    if l is None:
+        l = 2*p
+    
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Generate a random test matrix Omega
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if sdist=='uniform':   
         Omega = np.array( sci.random.uniform( -1 , 1 , size=( n, k+p ) ) , dtype = dat_type ) 
-        Psi = np.array( sci.random.uniform( -1 , 1 , size=( k+p, m ) ) , dtype = dat_type ) 
+        Psi = np.array( sci.random.uniform( -1 , 1 , size=( k+l, m ) ) , dtype = dat_type ) 
         if isreal==False: 
-            Omega += 1j * sci.array( sci.random.uniform(-1 , 1 , size=( n, k+p  ) ) , dtype = dat_type )
-            Psi += 1j * sci.array( sci.random.uniform(-1 , 1 , size=( k+p, m  ) ) , dtype = dat_type )
+            Omega += 1j * sci.array( sci.random.uniform(-1 , 1 , size=( n, k+p  ) ) , dtype = real_type )
+            Psi += 1j * sci.array( sci.random.uniform(-1 , 1 , size=( k+l, m  ) ) , dtype = real_type )
     
     elif sdist=='normal':   
         Omega = np.array( sci.random.standard_normal( size=( n, k+p  ) ) , dtype = dat_type ) 
-        Psi = np.array( sci.random.standard_normal( size=( k+p, m  ) ) , dtype = dat_type )  
+        Psi = np.array( sci.random.standard_normal( size=( k+l, m  ) ) , dtype = dat_type )  
         if isreal==False: 
-            Omega += 1j * sci.array( sci.random.standard_normal( size=( n, k+p  ) ) , dtype = dat_type )     
-            Psi += 1j * sci.array( sci.random.standard_normal( size=( k+p, m  ) ) , dtype = dat_type )     
+            Omega += 1j * sci.array( sci.random.standard_normal( size=( n, k+p  ) ) , dtype = real_type )     
+            Psi += 1j * sci.array( sci.random.standard_normal( size=( k+l, m  ) ) , dtype = real_type )     
+
+    elif sdist=='orthogonal':   
+        Omega = np.array( sci.random.standard_normal( size=( n, k+p  ) ) , dtype = dat_type ) 
+        Psi = np.array( sci.random.standard_normal( size=( k+l, m  ) ) , dtype = dat_type )  
+        if isreal==False: 
+            Omega += 1j * sci.array( sci.random.standard_normal( size=( n, k+p  ) ) , dtype = real_type )     
+            Psi += 1j * sci.array( sci.random.standard_normal( size=( k+l, m  ) ) , dtype = real_type )  
+
+        Omega , _ = sci.linalg.qr( Omega ,  mode='economic' , check_finite=False, overwrite_a=True ) 
+        Psi , _ = sci.linalg.qr( Psi.T ,  mode='economic' , check_finite=False, overwrite_a=True ) 
+        Psi = Psi.T
 
     else: 
         raise ValueError('Sampling distribution is not supported.')    
@@ -175,9 +191,9 @@ def rsvd_single(A, k=None, p=10, sdist='uniform'):
 
     #Return Trunc
     if flipped==True:
-        return ( fT( Vt )[ : ,  list(range( k)) ] , s[ list(range( k)) ] , fT(U)[ list(range( k)), : ] ) 
+        return ( fT( Vt )[ : , 0:k] , s[ 0:k ] , fT(U)[ 0:k, : ] ) 
     else: 
-        return ( U[ : , list(range( k)) ] , s[ list(range( k)) ] , Vt[ list(range( k)) , : ] ) 
+        return ( U[ : , 0:k] , s[ 0:k ] , Vt[ 0:k , : ] ) 
 
     
 
