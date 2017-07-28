@@ -1,1 +1,1 @@
-__all__ = ['mf','nmf']
+__all__ = ['mf','nmf','dmd']
