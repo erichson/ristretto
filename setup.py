@@ -2,7 +2,7 @@
 
 
 NAME ='ristretto'
-VERSION ='0.0.1'
+VERSION ='0.1.0'
 DESCRIPTION ='ristretto: Randomized Dimension Reduction Library'
 URL ='https://github.com/Benli11/ristretto'
 AUTHER ='N. Benjamin Erichson'
