@@ -2,11 +2,11 @@
 
 
 NAME ='ristretto'
-VERSION ='0.1.0'
+VERSION ='0.1.2'
 DESCRIPTION ='ristretto: Randomized Dimension Reduction Library'
 URL ='https://github.com/Benli11/ristretto'
 AUTHER ='N. Benjamin Erichson'
-EMAIL ='erichson at uw dot edu'
+EMAIL ='erichson@uw.edu'
 LICENSE ='GNU'
 
 
@@ -85,8 +85,17 @@ else:
         Extension("ristretto._rfhals_update", [ "ristretto/nmf/_rfhals_update.c" ]),
     ]
 
-with open("requirements.txt", "r") as f:
-    required = f.readlines()
+
+
+install_requires=[
+   'cython',
+   'numpy',
+   'scipy'
+]
+
+tests_require = ['numpy',
+   		 'scipy']
+
 
 setup(
     name = NAME,
@@ -96,7 +105,8 @@ setup(
     author = AUTHER,
     author_email = EMAIL,
     license = LICENSE,
-    required=required,
+    install_requires = install_requires,
+    tests_require = tests_require,
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
@@ -125,7 +135,7 @@ setup(
     packages=find_packages(exclude=['tests*']),
     test_suite='nose.collector',	
 
-	# cythonize
+    # cythonize
     cmdclass = cmdclass,
     ext_modules = ext_modules
 )
