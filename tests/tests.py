@@ -8,10 +8,14 @@ from ristretto.mf import *
 from ristretto.dmd import *
 from ristretto.util import *
 
+from ristretto.big.random_qr \
+    import _random_sketch, _power_iterations, randomized_qr_sample
 
 
 from unittest import main, makeSuite, TestCase, TestSuite
-from numpy.testing import assert_raises, assert_equal, assert_allclose
+from numpy.testing \
+    import (assert_raises, assert_equal, assert_allclose, assert_array_equal,
+            assert_array_almost_equal)
 
 atol_float32 = 1e-4
 atol_float64 = 1e-8
@@ -30,9 +34,9 @@ class test_mf(TestCase):
         Q, B = rqb(A, k=k, p=5, q=2)
         Ak = Q.dot(B)
         percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
-        
+
         assert percent_error < atol_float64
-           
+
 
     def test_rqb_complex128(self):
         m, k = 100, 10
@@ -41,7 +45,7 @@ class test_mf(TestCase):
         Q, B = rqb(A, k=k, p=5, q=2)
         Ak = Q.dot(B)
         percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
-        
+
         assert percent_error < atol_float64
 
     def test_rsvd_float64(self):
@@ -51,9 +55,9 @@ class test_mf(TestCase):
         U, s, Vt = rsvd(A, k=k, p=5, q=2)
         Ak = U.dot(np.diag(s).dot(Vt))
         percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
-        
+
         assert percent_error < atol_float64
-           
+
 
     def test_rsvd_complex128(self):
         m, k = 100, 10
@@ -62,17 +66,17 @@ class test_mf(TestCase):
         U, s, Vh = rsvd(A, k=k, p=5, q=2)
         Ak = U.dot(np.diag(s).dot(Vh))
         percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
-        
+
         assert percent_error < atol_float64
 
-		  
+
     def test_rsvd_fliped_float64(self):
         m, k = 100, 10
         A = np.array(np.random.randn(m, k), np.float64)
         A = A.dot(A.T)
         A = A[:,0:50]
         U, s, Vh = rsvd(A.T, k=k, p=5, q=2)
-        Ak = U.dot(np.diag(s).dot(Vh))        
+        Ak = U.dot(np.diag(s).dot(Vh))
         percent_error = 100 * np.linalg.norm(A.T - Ak) / np.linalg.norm(A.T)
         
         assert percent_error < atol_float64  
@@ -401,16 +405,90 @@ class test_dmd(TestCase):
         assert np.allclose(A, Atilde, atol_float64) 
 
 
+#
+#******************************************************************************
+#
+class test_random_qr(TestCase):
+    def setUp(self):
+        np.random.seed(123)
 
+    def test_random_sketch(self):
+        A = np.random.rand(50,100).astype(np.float16)
+        r = 10
+
+        sketch = _random_sketch(A, r)
+
+        assert( sketch.shape == (50,r) )
+        assert( sketch.dtype == A.dtype )
+
+    def test_random_sketch_blocked(self):
+        A = np.random.rand(50,100)
+        r = 10
+
+        np.random.seed(123)
+        sketch = _random_sketch(A, r)
+
+        np.random.seed(123)
+        blocked = _random_sketch(A, r, n_blocks=5)
+
+        assert_array_almost_equal( sketch, blocked )
+
+    def test_power_iterations(self):
+        A = np.random.rand(50,100).astype(np.float32)
+        Y = np.random.rand(50,10).astype(np.float32)
+        n = 5
+
+        out = _power_iterations(A, Y.copy(), n_iters=n)
+
+        assert( out.dtype == A.dtype )
+
+    def test_power_iterations_blocked(self):
+        A = np.random.rand(50,100).astype(np.float32)
+        Y = np.random.rand(50,10).astype(np.float32)
+        n = 5
+
+        out = _power_iterations(A, Y.copy(), n_iters=n)
+        blocked = _power_iterations(A, Y.copy(), n_iters=n, n_blocks=10)
+
+        assert_array_equal( out, blocked )
+
+    def test_randomized_qr_sample(self):
+        # ensure truely low dim
+        l = np.random.rand(50,10)
+        r = np.random.rand(10,100)
+        A = l.dot(r)
+        k = 10
+
+        random = randomized_qr_sample( A, target_rank=k, oversample=50,
+                                       n_iters=10)
+        _, _, P = sci.linalg.qr(A.T, mode='economic', overwrite_a=False,
+                                      pivoting=True)
+
+        assert_array_almost_equal( random, P[:k] )
+
+    def test_randomized_qr_sample_blocked(self):
+        l = np.random.rand(100,10)
+        r = np.random.rand(10,200)
+        A = l.dot(r)
+        k = 10
+
+        np.random.seed(123)
+        random = randomized_qr_sample( A, target_rank=k, oversample=50,
+                                       n_iters=10)
+
+        np.random.seed(123)
+        blocked = randomized_qr_sample( A, target_rank=k, oversample=50,
+                                        n_iters=10, n_blocks=5)
+
+        assert_array_almost_equal( random, blocked )
 
 #
 #******************************************************************************
 #
-      
+
 def suite():
     s = TestSuite()
 
-    
     return s
 
 if __name__ == '__main__':

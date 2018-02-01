@@ -1,36 +1,61 @@
 # Authors: Ben Erichson erichson@uw.edu
 #          Joseph Knox josephk@alleninstitute.org
 # License:
-import numpy as np
-from scipy.linalg import qr
-from numpy.random import standard_normal
 
-def _random_sketch(A, Omega, out, n_blocks):
+# NOTE : linalg.qr returns FORTRAN contiguous arrays!!!
+
+from functools import partial
+from scipy import linalg
+import numpy as np
+
+def _random_sketch(A, extended_rank, n_blocks=0):
     """Constructs sketch of A as the sum of randomly weighted columns of A.
 
     More
 
     Parameters
     ---------
+    A
+
+    extended_rank
+
+    n_blocks
+
+    Returns
+    -------
     """
-    # split indices into n_blocks
-    idx_sets = np.array_split( np.arange(A.shape[1], dtype=np.int), n_blocks)
-    for idx in idx_sets:
+    # random matrix ..
+    Omega = np.random.standard_normal( (A.shape[1], extended_rank) )
+    Omega = Omega.astype( A.dtype )
 
-        # inplace
-        np.add( A[:,idx].dot(Omega[idx,:]), out, out)
+    # initialize result array
+    out = np.zeros( (A.shape[0], extended_rank), dtype=A.dtype )
 
-def _power_iterations(A, Y, Z, n_iterations, n_blocks):
-    """Performs power iterations"""
+    if n_blocks:
+        # do the computation blocked
+        idx_sets = np.array_split( np.arange(A.shape[1]), n_blocks)
+        for idx in idx_sets:
 
+            # inplace addition
+            np.add( A[:,idx].dot(Omega[idx,:]), out, out)
+    else:
+        # overwrite out
+        np.dot( A, Omega, out)
+
+    return out
+
+def _blocked_power_iters(qr_func, A, Y, Z, n_iters, n_blocks):
+    """Performs power iterations in blocks.
+
+    see _power_iterations for more
+    """
     # index sets
-    row_sets = np.array_split( np.arange(A.shape[0]), n_blocks )
-    col_sets = np.array_split( np.arange(A.shape[1]), n_blocks )
-
-    for i in range(n_iterations):
+    row_sets, col_sets = map(lambda x : np.array_split(np.arange(x),
+                                                       n_blocks), A.shape)
+    for _ in range(n_iters):
 
         # qr of sketch
-        Y, _ = qr(Y, mode='economic', check_finite=False, overwrite_a=True)
+        Y, _ = qr_func(Y)
 
         # project ...
         Z = Z.T
@@ -38,7 +63,7 @@ def _power_iterations(A, Y, Z, n_iterations, n_blocks):
             Z[:, idx] = Y.T.dot(A[:,idx])
 
         # qr of projection
-        Z, _ = qr(Z.T, mode='economic', check_finite=False, overwrite_a=True)
+        Z, _ = qr_func(Z.T)
 
         # project back
         for idx in row_sets:
@@ -46,28 +71,98 @@ def _power_iterations(A, Y, Z, n_iterations, n_blocks):
 
     return Y
 
-def randomized_qr_sample( A, target_rank=1, oversample_size=0,
-                          n_power_iterations=0, n_blocks=1):
-    # for convienence
-    m, n = A.shape
+def _power_iters(qr_func, A, Y, Z, n_iters):
+    """Performs power iterations.
 
-    # random matrix ..
-    Omega = standard_normal( (n, target_rank + oversample_size) )
+    see _power_iterations for more
+    """
+    for _ in range(n_iters):
+
+        # qr of sketch
+        Y, _ = qr_func(Y)
+        Z = np.dot(A.T, Y)
+
+        # qr of projection
+        Z, _ = qr_func(Z)
+        Y = np.dot(A, Z)
+
+    return Y
+
+def _power_iterations(A, Y, n_iters=0, n_blocks=0):
+    """Performs power iterations on Y.
+
+    ...
+
+    Parameters
+    ----------
+    A
+
+    Y
+
+    n_iters
+
+    n_blocks
+
+    Returns
+    -------
+    C
+    """
+
+
+    # QR
+    qr_func = partial(linalg.qr, mode="economic", check_finite=False,
+                      overwrite_a=True)
+
+    # initialize array ...
+    Z = np.empty( (A.shape[1], Y.shape[1]), dtype=A.dtype )
+
+    if n_blocks:
+        return _blocked_power_iters(qr_func, A, Y, Z, n_iters, n_blocks)
+
+    return _power_iters(qr_func, A, Y, Z, n_iters)
+
+
+def randomized_qr_sample( A, target_rank=1, oversample=0, n_iters=0,
+                          n_blocks=0):
+    """Generate column subset using randomized QR factorization.
+
+    ...
+
+    Parameters
+    ----------
+    A
+
+    target_rank
+
+    oversample_size
+
+    n_iters
+
+    n_blocks
+
+    Returns
+    -------
+    C
+
+    Examples
+    --------
+    """
+    if n_blocks > min(A.shape):
+        raise ValueError( "n_blocks must be less than the smallest "
+                          "dimension of A ({})".format(min(A.shape)) )
+
+    # extended rank :: rank of spaces we compute to give us a better estimate
+    extended_rank = target_rank + oversample
 
     # construct random sketch
-    Y = np.zeros( (m, target_rank + oversample_size), dtype=np.float32 )
-    _random_sketch(A, Omega, Y, n_blocks)
-
-    del(Omega)
+    Y = _random_sketch(A, extended_rank, n_blocks)
 
     # perform power iterations for stability
-    Z = np.empty( (n, target_rank + oversample_size), dtype=np.float32 )
-    Y = _power_iterations(A, Y, Z, n_power_iterations, n_blocks)
-
-    del(Z)
+    if n_iters:
+        Y = _power_iterations(A, Y, n_iters, n_blocks)
 
     # Now compute pivoted QR of Y.T
-    Q, R, P = qr(Y.T , mode='economic', overwrite_a=True, pivoting=True)
+    Q, R, P = linalg.qr(Y.T , mode='economic', overwrite_a=True, pivoting=True)
 
     # Select column subset
     return P[:target_rank]
