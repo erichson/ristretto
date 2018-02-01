@@ -450,7 +450,7 @@ class test_random_qr(TestCase):
         out = _power_iterations(A, Y.copy(), n_iters=n)
         blocked = _power_iterations(A, Y.copy(), n_iters=n, n_blocks=10)
 
-        assert_array_equal( out, blocked )
+        assert_array_almost_equal( out, blocked )
 
     def test_randomized_qr_sample(self):
         # ensure truely low dim
