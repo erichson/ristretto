@@ -162,7 +162,56 @@ class test_mf(TestCase):
         
         assert percent_error < atol_float64 
         
+
+    def test_reigh_float64(self):
+        m, k = 100, 10
+        A = np.array(np.random.randn(m, k), np.float64)
+        A = A.dot(A.T)
         
+        w, v = reigh(A, k=k, p=5, q=2)
+        Ak = (v*w).dot(v.T)        
+        
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
+        assert percent_error < atol_float64  
+  
+		    
+    def test_reigh_complex128(self):
+        m, k = 100, 10
+        A = np.array(np.random.randn(m, k), np.float64) + 1j * np.array(np.random.randn(m, k), np.float64)
+        A = A.dot(A.conj().T)
+
+        w, v = reigh(A, k=k, p=10, q=2)
+        Ak = (v*w).dot(v.conj().T)      
+        
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
+        assert percent_error < atol_float64 
+
+
+
+    def test_reig_nystroem_float64(self):
+        m, k = 20, 10
+        A = np.array(np.random.randn(m, k), np.float64)
+        A = A.dot(A.T)
+        
+        w, v = reigh_nystroem(A, k=k, p=0, q=2)
+        Ak = (v*w).dot(v.T)        
+        
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
+        assert percent_error < atol_float64  
+  
+		    
+    def test_reig_nystroem_complex128(self):
+        m, k = 20, 10
+        A = np.array(np.random.randn(m, k), np.float64) + 1j * np.array(np.random.randn(m, k), np.float64)
+        A = A.dot(A.conj().T)
+        
+        w, v = reigh_nystroem(A, k=k, p=0, q=2)
+        Ak = (v*w).dot(v.conj().T)      
+        
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
+        assert percent_error < atol_float64 
+
+
 #
 #******************************************************************************
 #
