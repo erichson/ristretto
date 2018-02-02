@@ -11,7 +11,9 @@ import numpy as np
 import scipy as sci
 from scipy import linalg
 
-from .._rfhals_update import _rfhals_update
+from ristretto._rfhals_update import _rfhals_update
+
+
 
 #import pyximport; pyximport.install()
 #from _rfhals_update import _rfhals_update
