@@ -14,7 +14,6 @@ from scipy import linalg
 from ristretto._rfhals_update import _rfhals_update
 
 
-
 #import pyximport; pyximport.install()
 #from _rfhals_update import _rfhals_update
 
@@ -158,7 +157,10 @@ def rnmf_fhals(A, k, p=20, q=2, init='normal', tol=1e-4, maxiter=100, verbose=Fa
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
     Wtemp = np.empty(W.shape)
     
+    fit = []
+    
     for niter in range(maxiter):
+        violation = 0.0
 
         # Pointer to updated factor matrix 
         if niter != 0: W = Wtemp    
@@ -167,7 +169,7 @@ def rnmf_fhals(A, k, p=20, q=2, init='normal', tol=1e-4, maxiter=100, verbose=Fa
         WtW = W.T.dot(W)
         AtW = A.T.dot(W)
         
-        _ = _rfhals_update(Ht, WtW, AtW)                        
+        violation += _rfhals_update(Ht, WtW, AtW)                        
         Ht /= sci.maximum(epsi, sci.linalg.norm(Ht, axis=0))
 
         # Update factor matrix W
@@ -175,26 +177,47 @@ def rnmf_fhals(A, k, p=20, q=2, init='normal', tol=1e-4, maxiter=100, verbose=Fa
         AHt = Q.dot(A.dot(Ht)) # Rotate AHt back to high-dimensional space
 
         W = Q.dot(W) # Rotate W back to high-dimensional space
-        _ = _rfhals_update(W, HHt, AHt)
+        violation += _rfhals_update(W, HHt, AHt)
+        print(violation)
         
         # Project W to low-dimensional space
         Wtemp = Q.T.dot(W)  
         
-        # Compute stopping condition.
-        if niter % 10 == 0 and verbose == True:
-            fit = np.log10(sci.linalg.norm(A - Wtemp.dot( Ht.T )))
-
-            if niter == 0: fitold = fit               
-            
-            fitchange = abs(fitold - fit)
-            fitold = fit
+        
+        
+        if niter >= 5:
+            # Compute stopping condition.
+            if niter == 5:
+                violation_init = violation
+    
+            if violation_init == 0:
+                break       
+    
+            fitchange = violation / violation_init
             
             if verbose == True:
-                print('Iteration: %s fit: %s, fitchange: %s' %(niter, fit, fitchange))        
-            #End if        
- 
-            if niter > 1 and (fit <= -5 or fitchange <= tol):      
-                break       
+                print('Iteration: %s fit: %s, fitchange: %s' %(niter, violation, fitchange))        
+    
+            if fitchange <= tol:
+                break        
+            
+            fit.append(violation)
+        
+        # Compute stopping condition.
+#        if niter % 10 == 0 and verbose == True:
+#            fit = np.log10(sci.linalg.norm(A - Wtemp.dot( Ht.T )))
+#
+#            if niter == 0: fitold = fit               
+#            
+#            fitchange = abs(fitold - fit)
+#            fitold = fit
+#            
+#            if verbose == True:
+#                print('Iteration: %s fit: %s, fitchange: %s' %(niter, fit, fitchange))        
+#            #End if        
+# 
+#            if niter > 1 and (fit <= -5 or fitchange <= tol):      
+#                break       
             #End if 
         #End if                  
     #End for
@@ -203,7 +226,7 @@ def rnmf_fhals(A, k, p=20, q=2, init='normal', tol=1e-4, maxiter=100, verbose=Fa
     # Return factor matrices
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     if verbose == True:
-        fit = np.log10(sci.linalg.norm(A - (Q.T.dot(W)).dot( Ht.T)))
-        print('Final Iteration: %s fit: %s' %(niter, fit)) 
+        fit_final = sci.linalg.norm(A - (Q.T.dot(W)).dot( Ht.T))
+        print('Final Iteration: %s fit: %s' %(niter, fit_final)) 
         
-    return( W, Ht.T )
+    return( W, Ht.T)
