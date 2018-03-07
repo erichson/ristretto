@@ -7,6 +7,7 @@ from ristretto.nmf import *
 from ristretto.mf import *
 from ristretto.dmd import *
 from ristretto.util import *
+from ristretto.pca import *
 
 
 
@@ -198,7 +199,17 @@ class test_mf(TestCase):
         
         percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
         assert percent_error < atol_float64  
-  
+
+    def test_reig_nystroem_float64(self):
+        m, k = 20, 10
+        A = np.array(np.random.randn(m, k), np.float64)
+        A = A.dot(A.T)
+        
+        w, v = reigh_nystroem(A, k=k, p=5, q=2)
+        Ak = (v*w).dot(v.T)        
+        
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
+        assert percent_error < atol_float64    
 		    
     def test_reig_nystroem_complex128(self):
         m, k = 20, 10
@@ -211,6 +222,29 @@ class test_mf(TestCase):
         percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
         assert percent_error < atol_float64 
 
+
+    def test_reig_nystroem_col_float64(self):
+        m, k = 20, 10
+        A = np.array(np.random.randn(m, k), np.float64)
+        A = A.dot(A.T)
+
+        w, v = reigh_nystroem_col(A, k=k, p=0)
+        Ak = (v*w).dot(v.T)        
+        
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
+        assert percent_error < atol_float64  
+  
+		    
+    def test_reig_nystroem_col_complex128(self):
+        m, k = 20, 10
+        A = np.array(np.random.randn(m, k), np.float64) + 1j * np.array(np.random.randn(m, k), np.float64)
+        A = A.dot(A.conj().T)
+
+        w, v = reigh_nystroem_col(A, k=k, p=0)
+        Ak = (v*w).dot(v.conj().T)      
+        
+        percent_error = 100 * np.linalg.norm(A - Ak) / np.linalg.norm(A)
+        assert percent_error < atol_float64 
 
 #
 #******************************************************************************
@@ -365,6 +399,85 @@ class test_nmf(TestCase):
 
         relative_error = (np.linalg.norm(A - W.dot(H)) / np.linalg.norm(A))
         assert relative_error < 1e-4  
+
+
+    def test_nmf_fhals(self):
+        A, Anoisy = nmf_data(100, 100, 10, factor_type='normal', noise_type='normal',  noiselevel=0)
+        W, H = nmf_fhals(Anoisy, k=10)
+		
+        relative_error = (np.linalg.norm(A - W.dot(H)) / np.linalg.norm(A))
+        assert relative_error < 1e-4  
+     
+#
+#******************************************************************************
+#
+class test_pca(TestCase):
+    def setUp(self):
+        np.random.seed(123)
+
+    def test_pca_spca(self):
+        
+        
+        # Create Data
+        m = 10000
+        V1 = np.array(sci.random.standard_normal(m) * 290).reshape(-1, 1)
+        V2 = np.array(sci.random.standard_normal(m) * 399).reshape(-1, 1)
+        V3 = -0.1*V1 + 0.1*V2 + np.array(sci.random.standard_normal(m) * 100).reshape(-1, 1)
+        
+        A = np.concatenate((V1,V1,V1,V1, V2,V2,V2,V2, V3,V3), axis=1)
+        
+        alpha  = 0.00001
+        beta  = 0.01    
+        
+
+        Bstar, Astar, eigvals, obj = spca(A, n_components=3, max_iter=100, alpha=alpha, beta=beta, verbose=0)
+    
+        relative_error = (np.linalg.norm(A - A.dot(Bstar).dot(Astar.T)) / np.linalg.norm(A))
+        assert relative_error < 1e-4  
+            
+
+
+    def test_pca_rspca(self):
+        
+        # Create Data
+        m = 10000
+        V1 = np.array(sci.random.standard_normal(m) * 290).reshape(-1, 1)
+        V2 = np.array(sci.random.standard_normal(m) * 399).reshape(-1, 1)
+        V3 = -0.1*V1 + 0.1*V2 + np.array(sci.random.standard_normal(m) * 100).reshape(-1, 1)
+        
+        A = np.concatenate((V1,V1,V1,V1, V2,V2,V2,V2, V3,V3), axis=1)
+        
+        alpha  = 0.00001
+        beta  = 0.01
+        
+
+        Bstar, Astar, eigvals, obj = rspca(A, n_components=3, p=10, q=2, max_iter=100, alpha=alpha, beta=beta, verbose=0)
+
+        relative_error = (np.linalg.norm(A - A.dot(Bstar).dot(Astar.T)) / np.linalg.norm(A))
+        assert relative_error < 1e-4  
+
+    def test_pca_robspca(self):
+        
+        
+        # Create Data
+        m = 10000
+        V1 = np.array(sci.random.standard_normal(m) * 290).reshape(-1, 1)
+        V2 = np.array(sci.random.standard_normal(m) * 399).reshape(-1, 1)
+        V3 = -0.1*V1 + 0.1*V2 + np.array(sci.random.standard_normal(m) * 100).reshape(-1, 1)
+        
+        A = np.concatenate((V1,V1,V1,V1, V2,V2,V2,V2, V3,V3), axis=1)
+        
+        alpha  = 0.00001
+        beta  = 0.01
+        gamma  = 0.1        
+        
+
+        Bstar, Astar, S, eigvals, obj = robspca(A, n_components=3, max_iter=100, alpha=alpha, beta=beta, gamma=gamma, verbose=0)
+    
+        relative_error = (np.linalg.norm(A - A.dot(Bstar).dot(Astar.T)) / np.linalg.norm(A))
+        assert relative_error < 1e-4    
+
+
 
 
     def test_nmf_fhals(self):
