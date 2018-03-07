@@ -6,7 +6,7 @@ from ristretto.mf.rcur import cur, rcur
 from ristretto.mf.interp_decomp import interp_decomp, rinterp_decomp, rinterp_decomp_qb
 from ristretto.mf.rlu import rlu
 from ristretto.mf.rqb import rqb
-from ristretto.mf.reigen import reigh, reigh_nystroem
+from ristretto.mf.reigen import reigh, reigh_nystroem, reigh_nystroem_col
 
 
 # Dynamic Mode Decomposition
@@ -18,3 +18,8 @@ from ristretto.dmd.rdmd_single import rdmd_single
 #Nonnegative MF
 from ristretto.nmf.rnmf_fhals import rnmf_fhals
 from ristretto.nmf.nmf_fhals import nmf_fhals
+
+#PCA
+from ristretto.pca.spca import spca, rspca, robspca
+
+
