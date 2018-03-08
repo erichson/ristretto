@@ -25,7 +25,7 @@ To install the latest stable release of ristretto run:
 ### Obtaining the Latest Software via GIT 
 To get the latest stable and development versions of ristretto run:
 
-``git clone https://github.com/Benli11/ristretto``
+``git clone https://github.com/erichson/ristretto``
 
 Then, to build and install the package, run from within the main directory in the release:
 

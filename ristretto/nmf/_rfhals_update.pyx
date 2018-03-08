@@ -37,4 +37,4 @@ def _rfhals_update(double[:, ::1] W, double[:, :] HHt, double[:, :] AHt):
                 if HHt[t, t] != 0:
                     W[i, t] = max(0.0, W[i, t] - gradient / HHt[t, t])
                 
-return violation
+    return violation
