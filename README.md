@@ -2,11 +2,8 @@
 
 The idea of randomized low-rank matrix approximations is to restrict the high-dimensional input data matrix to a low-dimensional space. In plain words, the aim is to find a smaller matrix which captures the essential information of the input matrix. This smaller matrix can then be used to extract (learn) the coherent structure of the data. Probabilistic algorithms considerably reduce the computational demands of traditional (deterministic) algorithms, and the computational advantage becomes pronounced with increasing matrix dimensions.
 
-<<<<<<< HEAD
+
 # ristretto: Package Overview [![Build Status](https://travis-ci.org/erichson/ristretto.svg?branch=master)](https://travis-ci.org/erichson/ristretto)
-=======
-# ristretto: Package Overview [![Build Status](https://travis-ci.org/erichson/ristretto.svg?branch=master)](https://travis-ci.org/Benli11/ristretto)
->>>>>>> e68a4ece1d04a2a379ef490d215703c4edf4f738
 *************************************************
 
 The Python software library ristretto provides a collection of randomized matrix algorithms which can be used for dimension reduction. Overview of implemented routines:
