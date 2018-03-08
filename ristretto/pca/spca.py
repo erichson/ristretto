@@ -92,11 +92,14 @@ def spca(X, n_components=None, alpha = 0.1, beta = 0.01,
  
     #--------------------------------------------------------------------
     #   Set Tuning Parameters
-    #--------------------------------------------------------------------   
+    #--------------------------------------------------------------------  
+    alpha *= Dmax**2
+    beta *= Dmax**2
+    
     noi = 0
     err = 1.0
-    nu   = 1.0 / (Dmax**2 + beta*Dmax**2)
-    kappa = nu * alpha * Dmax**2
+    nu   = 1.0 / (Dmax**2 + beta)
+    kappa = nu * alpha
         
     
     obj = []
@@ -119,7 +122,7 @@ def spca(X, n_components=None, alpha = 0.1, beta = 0.01,
         
         # Proximal Gradient Descent to Update B
         #G = XtX.dot(A-B) - beta * B
-        G = (Vt.T*D**2).dot(Vt.dot(A - B)) - beta * B
+        G = (Vt.T * D**2).dot(Vt.dot(A - B)) - beta * B
         
         B_temp = B + nu * G
         
@@ -130,23 +133,23 @@ def spca(X, n_components=None, alpha = 0.1, beta = 0.01,
         B[idxH] = B_temp[idxH] - kappa    
         B[idxL] = B_temp[idxL] + kappa
 
-        
-        DV = Vt.T * D**2
+
+        # compute residual
+        DV = Vt.T * D
         R = DV.T - DV.T.dot(B).dot(A.T)
-        
+      
         # Compute objective function
-        obj.append(0.5 * sci.sum(R**2) + alpha * sci.sum(abs(B)) + 0.5 * beta * sci.sum(B**2))
-    
-        err = sci.linalg.norm(B - Bstar) / nu
-    
+        obj.append( 0.5 * sci.sum(R**2) + alpha * sci.sum(np.abs(B)) + 0.5 * beta * sci.sum(B**2) )  
+
+            
         # Verbose
-        if verbose == True and noi%10==0: print("Iteration:  %s, Objective:  %s, Error:  %s" % (noi, obj[noi], err))
+        if verbose == True and noi%10==0: print("Iteration:  %s, Objective:  %s" % (noi, obj[noi]))
     
         # Update Bstar
         Bstar = B.copy() 
        
         # Break if obj is not improving anymore
-        if noi>2 and abs(obj[noi-1]-obj[noi]) / obj[noi] < tol: break        
+        if noi>0 and abs(obj[noi-1]-obj[noi]) / obj[noi] < tol: break        
 
         # Next iter
         noi += 1 
@@ -405,6 +408,7 @@ def robspca(X, n_components, alpha  = 0.1, beta  = 0.1, gamma  = 0.1,
         B[idxL] = B_temp[idxL] + kappa
    
         
+        # compute residual
         R = X - (X.dot(B)).dot(A.T)   
 
         # l1 soft-threshold
@@ -420,16 +424,15 @@ def robspca(X, n_components, alpha  = 0.1, beta  = 0.1, gamma  = 0.1,
                    0.5 * beta * sci.sum(B**2) + gamma * sci.sum(abs(S)))
 
 
-        err = sci.linalg.norm(B - Bstar) / nu
     
         # Verbose
-        if verbose == True and noi%10==0: print("Iteration:  %s, Objective:  %s, Error:  %s" % (noi, obj[noi], err))
+        if verbose == True and noi%10==0: print("Iteration:  %s, Objective:  %s" % (noi, obj[noi]))
     
         # Update Bstar
         Bstar = B.copy()
         
         # Break if obj is not improving anymore
-        if noi>2 and abs(obj[noi-1]-obj[noi])/obj[noi] < tol: break        
+        if noi>0 and abs(obj[noi-1]-obj[noi]) / obj[noi] < tol: break        
 
         # Next iter
         noi += 1 
