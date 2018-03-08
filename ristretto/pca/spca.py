@@ -88,7 +88,6 @@ def spca(X, n_components=None, alpha = 0.1, beta = 0.01,
     A = Vt.T[:, 0:n_components]
     B = Vt.T[:, 0:n_components]
     
-    Bstar = B.copy()    
  
     #--------------------------------------------------------------------
     #   Set Tuning Parameters
@@ -97,7 +96,6 @@ def spca(X, n_components=None, alpha = 0.1, beta = 0.01,
     beta *= Dmax**2
     
     noi = 0
-    err = 1.0
     nu   = 1.0 / (Dmax**2 + beta)
     kappa = nu * alpha
         
@@ -145,8 +143,6 @@ def spca(X, n_components=None, alpha = 0.1, beta = 0.01,
         # Verbose
         if verbose == True and noi%10==0: print("Iteration:  %s, Objective:  %s" % (noi, obj[noi]))
     
-        # Update Bstar
-        Bstar = B.copy() 
        
         # Break if obj is not improving anymore
         if noi>0 and abs(obj[noi-1]-obj[noi]) / obj[noi] < tol: break        
@@ -360,16 +356,18 @@ def robspca(X, n_components, alpha  = 0.1, beta  = 0.1, gamma  = 0.1,
 
     A = Vt.T
     B = Vt.T
-    Bstar = B    
 
     #--------------------------------------------------------------------
     #   Set Tuning Parameters
     #--------------------------------------------------------------------   
-    noi = 0
-    err = 1.0
-    nu   = 1.0 / (Dmax**2 + beta * Dmax**2)
-    kappa = nu * alpha * Dmax**2
+    alpha *= Dmax**2
+    beta *= Dmax**2
     gamma *= Dmax**2    
+    
+    
+    noi = 0
+    nu   = 1.0 / (Dmax**2 + beta)
+    kappa = nu * alpha 
     
     obj = []
     
@@ -428,8 +426,6 @@ def robspca(X, n_components, alpha  = 0.1, beta  = 0.1, gamma  = 0.1,
         # Verbose
         if verbose == True and noi%10==0: print("Iteration:  %s, Objective:  %s" % (noi, obj[noi]))
     
-        # Update Bstar
-        Bstar = B.copy()
         
         # Break if obj is not improving anymore
         if noi>0 and abs(obj[noi-1]-obj[noi]) / obj[noi] < tol: break        
