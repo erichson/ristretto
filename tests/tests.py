@@ -468,7 +468,7 @@ class test_pca(TestCase):
         
         alpha  = 1e-3
         beta  = 1e-5
-        gamma  = 0.1        
+        gamma  = 10       
         
 
         Bstar, Astar, S, eigvals, obj = robspca(A, n_components=3, max_iter=100, alpha=alpha, beta=beta, gamma=gamma, verbose=0)

@@ -362,7 +362,7 @@ def robspca(X, n_components, alpha  = 0.1, beta  = 0.1, gamma  = 0.1,
     #--------------------------------------------------------------------   
     alpha *= Dmax**2
     beta *= Dmax**2
-    gamma *= Dmax**2    
+    #gamma *= Dmax**2    
     
     
     noi = 0
