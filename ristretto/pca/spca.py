@@ -81,14 +81,16 @@ def spca(X, n_components=None, alpha = 0.1, beta = 0.01,
     #--------------------------------------------------------------------
     #   Initialization of Variable Projection Solver
     #--------------------------------------------------------------------    
-    _, D, Vt = sci.linalg.svd( X , full_matrices=False, overwrite_a=False)
+    _, D, Vt = sci.linalg.svd(X , full_matrices=False, overwrite_a=False)
     
     Dmax = D[0] # l2 norm
 
     A = Vt.T[:, 0:n_components]
     B = Vt.T[:, 0:n_components]
     
- 
+    VD = Vt.T * D
+    VD2 = Vt.T * D**2
+    
     #--------------------------------------------------------------------
     #   Set Tuning Parameters
     #--------------------------------------------------------------------  
@@ -106,12 +108,12 @@ def spca(X, n_components=None, alpha = 0.1, beta = 0.01,
     #   Apply Variable Projection Solver
     #--------------------------------------------------------------------  
     while max_iter > noi:
-  
+        
         # Update A: 
         # X'XB = UDV'
         # Compute X'XB via SVD of X
         #Z = XtX.dot(B)
-        Z = (Vt.T * D**2).dot( Vt.dot(B) )
+        Z = VD2.dot( Vt.dot(B) )
     
         Utilde, Dtilde, Vttilde = sci.linalg.svd( Z , full_matrices=False, overwrite_a=True)
         
@@ -120,7 +122,7 @@ def spca(X, n_components=None, alpha = 0.1, beta = 0.01,
         
         # Proximal Gradient Descent to Update B
         #G = XtX.dot(A-B) - beta * B
-        G = (Vt.T * D**2).dot(Vt.dot(A - B)) - beta * B
+        G = VD2.dot(Vt.dot(A - B)) - beta * B
         
         B_temp = B + nu * G
         
@@ -132,25 +134,28 @@ def spca(X, n_components=None, alpha = 0.1, beta = 0.01,
         B[idxL] = B_temp[idxL] + kappa
 
 
-        # compute residual
-        DV = Vt.T * D
-        R = DV.T - DV.T.dot(B).dot(A.T)
-      
-        # Compute objective function
-        obj.append( 0.5 * sci.sum(R**2) + alpha * sci.sum(np.abs(B)) + 0.5 * beta * sci.sum(B**2) )  
 
-            
-        # Verbose
-        if verbose == True and noi%10==0: print("Iteration:  %s, Objective:  %s" % (noi, obj[noi]))
+        if noi % 5 == 0:
+
+            # compute residual
+            R = VD.T - (VD.T.dot(B)).dot(A.T)
+          
+            # Compute objective function
+            obj.append( 0.5 * sci.sum(R**2) + alpha * sci.sum(np.abs(B)) + 0.5 * beta * sci.sum(B**2) )  
     
-       
-        # Break if obj is not improving anymore
-        if noi>0 and abs(obj[noi-1]-obj[noi]) / obj[noi] < tol: break        
+              
+            # Verbose
+            if verbose == True: print("Iteration:  %s, Objective value:  %s" % (noi, obj[-1]))
+        
+           
+            # Break if obj is not improving anymore
+            if noi > 0 and abs(obj[-2] - obj[-1]) / obj[-1] < tol: 
+                break        
 
         # Next iter
         noi += 1 
   
-    eigvals = Dtilde / (m-1)
+    eigvals = Dtilde / (m - 1)
     return(B, A, eigvals, obj)
 
 

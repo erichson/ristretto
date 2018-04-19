@@ -395,7 +395,7 @@ class test_nmf(TestCase):
 
     def test_rnmf_fhals(self):
         A, Anoisy = nmf_data(100, 100, 10, factor_type='normal', noise_type='normal',  noiselevel=0)
-        W, H = rnmf_fhals(Anoisy, k=10)
+        W, H = rnmf(Anoisy, k=10)
 
         relative_error = (np.linalg.norm(A - W.dot(H)) / np.linalg.norm(A))
         assert relative_error < 1e-4  
@@ -403,7 +403,7 @@ class test_nmf(TestCase):
 
     def test_nmf_fhals(self):
         A, Anoisy = nmf_data(100, 100, 10, factor_type='normal', noise_type='normal',  noiselevel=0)
-        W, H = nmf_fhals(Anoisy, k=10)
+        W, H = nmf(Anoisy, k=10)
 		
         relative_error = (np.linalg.norm(A - W.dot(H)) / np.linalg.norm(A))
         assert relative_error < 1e-4  
@@ -477,15 +477,6 @@ class test_pca(TestCase):
         assert relative_error < 1e-2 
 
 
-
-
-    def test_nmf_fhals(self):
-        A, Anoisy = nmf_data(100, 100, 10, factor_type='normal', noise_type='normal',  noiselevel=0)
-        W, H = nmf_fhals(Anoisy, k=10)
-		
-        relative_error = (np.linalg.norm(A - W.dot(H)) / np.linalg.norm(A))
-        assert relative_error < 1e-4  
-     
 
 
 #

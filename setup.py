@@ -75,14 +75,14 @@ ext_modules = [ ]
 
 if use_cython:
     ext_modules += [
-	Extension("ristretto._fhals_update", [ "ristretto/nmf/_fhals_update.pyx" ]),
-        Extension("ristretto._rfhals_update", [ "ristretto/nmf/_rfhals_update.pyx" ]),
+	Extension("ristretto._fhals_update_shuffle", [ "ristretto/nmf/_fhals_update_shuffle.pyx" ]),
+        Extension("ristretto._fhals_update_shuffle", [ "ristretto/nmf/_fhals_update_shuffle.pyx" ]),
     ]
     cmdclass.update({ 'build_ext': build_ext })
 else:
     ext_modules += [
-        Extension("ristretto._fhals_update", [ "ristretto/nmf/_fhals_update.c" ]),
-        Extension("ristretto._rfhals_update", [ "ristretto/nmf/_rfhals_update.c" ]),
+        Extension("ristretto._fhals_update_shuffle", [ "ristretto/nmf/_fhals_update_shuffle.c" ]),
+        Extension("ristretto._fhals_update_shuffle", [ "ristretto/nmf/_fhals_update_shuffle.c" ]),
     ]
 
 
