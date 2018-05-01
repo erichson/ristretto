@@ -499,7 +499,7 @@ def reigh_nystroem_col(A, k, p=0):
         s = s[0:k] * (n / k)         
         
     
-        return ( s[0:k]**2 , U) 
+        return ( s[0:k] , U) 
     
     
 
