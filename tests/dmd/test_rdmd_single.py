@@ -7,7 +7,7 @@ atol_float32 = 1e-4
 atol_float64 = 1e-8
 
 
-def test_rdmd_single(self):
+def test_rdmd_single():
     # Define time and space discretizations
     x=np.linspace( -10, 10, 100)
     t=np.linspace(0, 8*np.pi , 60)

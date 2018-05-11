@@ -21,7 +21,7 @@ _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 _VALID_SDISTS = ('uniform', 'normal', 'orthogonal')
 
 
-def rdmd_single(A, dt = 1, rank=None, p=10, l=None, sdist='uniform',
+def rdmd_single(A, dt = 1, k=None, p=10, l=None, sdist='uniform',
                 return_amplitudes=False, return_vandermonde=False, order=True):
     """Randomized Dynamic Mode Decomposition Single-View.
 
@@ -42,7 +42,7 @@ def rdmd_single(A, dt = 1, rank=None, p=10, l=None, sdist='uniform',
         Factor specifying the time difference between the observations.
 
     k : int
-        If `k < (n-1)` low-rank Dynamic Mode Decomposition is computed.
+        If `k < (n-1)` low-k Dynamic Mode Decomposition is computed.
 
     p : integer, default: `p=10`.
         Parameter to control oversampling of column space.
@@ -85,7 +85,7 @@ def rdmd_single(A, dt = 1, rank=None, p=10, l=None, sdist='uniform',
     References
     ----------
     Tropp, Joel A., et al.
-    "Randomized single-view algorithms for low-rank matrix approximation" (2016).
+    "Randomized single-view algorithms for low-k matrix approximation" (2016).
     (available at `arXiv <https://arxiv.org/abs/1609.00048>`_).
     """
     # converts A to array, raise ValueError if A has inf or nan
@@ -100,10 +100,10 @@ def rdmd_single(A, dt = 1, rank=None, p=10, l=None, sdist='uniform',
         raise ValueError('A.dtype must be one of %s, not %s'
                          % (' '.join(_VALID_DTYPES), A.dtype))
 
-    if rank > min(m,n) or rank < 1:
-        raise ValueError('If specified, rank must be < min(n,m) and > 1')
+    if k > min(m,n) or k < 1:
+        raise ValueError('If specified, k must be < min(n,m) and > 1')
 
-    if rank is None:
+    if k is None:
         # defualt
         k = min(m, n)
 
@@ -115,12 +115,12 @@ def rdmd_single(A, dt = 1, rank=None, p=10, l=None, sdist='uniform',
         l = 2*p
 
     #Generate a random test matrix Omega
-    Omega = sdist_func(size=(n, rank+p)).astype(A.dtype)
+    Omega = sdist_func(size=(n, k+p)).astype(A.dtype)
     Psi = sdist_func(size=(k+l, m)).astype(A.dtype)
 
     if A.dtype == np.complexfloating:
         real_type = np.float32 if A.dtype == np.complex64 else np.float64
-        Omega += 1j * sdist_func(size=(n, rank+p)).astype(real_type)
+        Omega += 1j * sdist_func(size=(n, k+p)).astype(real_type)
         Psi += 1j * sdist_func(size=(k+l, m)).astype(real_type)
 
     if sdist == 'orthogonal':
@@ -144,7 +144,7 @@ def rdmd_single(A, dt = 1, rank=None, p=10, l=None, sdist='uniform',
     # only difference is we need to premultiply F from dmd
     # vandermonde is basically already computed
     # TODO: factor out the rest so no code is repeated
-    F, V, omega = dmd(B, dt=dt, rank=rank, modes='standard',return_amplitudes=False,
+    F, V, omega = dmd(B, dt=dt, k=k, modes='standard',return_amplitudes=False,
                       return_vandermonde=True, order=order)
 
     #Compute DMD Modes

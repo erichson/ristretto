@@ -22,7 +22,7 @@ def _get_amplitudes(F, A):
     return result[0]
 
 
-def dmd(A, dt=1, rank=None, modes='exact', return_amplitudes=False,
+def dmd(A, dt=1, k=None, modes='exact', return_amplitudes=False,
         return_vandermonde=False, order=True):
     """Dynamic Mode Decomposition.
 
@@ -41,8 +41,8 @@ def dmd(A, dt=1, rank=None, modes='exact', return_amplitudes=False,
     dt : scalar or array_like
         Factor specifying the time difference between the observations.
 
-    rank : int, optional
-        If `rank < (n-1)` low-rank Dynamic Mode Decomposition is computed.
+    k : int, optional
+        If `k < (n-1)` low-rank Dynamic Mode Decomposition is computed.
 
     modes : str `{'standard', 'exact', 'exact_scaled'}`
         - 'standard' : uses the standard definition to compute the dynamic modes, `F = U * W`.
@@ -96,8 +96,8 @@ def dmd(A, dt=1, rank=None, modes='exact', return_amplitudes=False,
         raise ValueError('A.dtype must be one of %s, not %s'
                          % (' '.join(_VALID_DTYPES), A.dtype))
 
-    if rank is not None and (rank < 1 or rank > n - 1):
-        raise ValueError('rank must be > 1 and less than n - 1')
+    if k is not None and (k < 1 or k > n - 1):
+        raise ValueError('k must be > 1 and less than n - 1')
 
     #Split data into lef and right snapshot sequence
     X = A[:, :(n-1)] #pointer
@@ -107,10 +107,10 @@ def dmd(A, dt=1, rank=None, modes='exact', return_amplitudes=False,
     U, s, Vh = linalg.svd(X, compute_uv=True, full_matrices=False,
                           overwrite_a=False, check_finite=True)
 
-    if rank is not None:
-        U = U[:, :rank]
-        s = s[:rank]
-        Vh = Vh[:rank, :]
+    if k is not None:
+        U = U[:, :k]
+        s = s[:k]
+        Vh = Vh[:k, :]
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Solve the LS problem to find estimate for M using the pseudo-inverse
