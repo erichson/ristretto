@@ -18,12 +18,12 @@ def test_rdmd():
     F2 = ( (1./np.cosh(X)) * np.tanh(X)) *(2.*np.exp(1j*2.8*T))
     A = np.array((F1+F2).T, order='C')
 
-    Fmodes, b, V, omega = rdmd(A, k=2, p=10, q=2, sdist='uniform',
+    Fmodes, b, V, omega = rdmd(A, rank=2, p=10, q=2, sdist='uniform',
                                return_amplitudes=True, return_vandermonde=True)
     Atilde = Fmodes.dot( np.dot(np.diag(b), V))
     assert np.allclose(A, Atilde, atol_float64)
 
-    Fmodes, b, V, omega = rdmd(A, k=2, p=10, q=2, sdist='normal',
+    Fmodes, b, V, omega = rdmd(A, rank=2, p=10, q=2, sdist='normal',
                                return_amplitudes=True, return_vandermonde=True)
     Atilde = Fmodes.dot( np.dot(np.diag(b), V))
     assert np.allclose(A, Atilde, atol_float64)

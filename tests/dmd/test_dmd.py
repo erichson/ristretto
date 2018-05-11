@@ -18,7 +18,7 @@ def test_dmd():
     F2 = ( (1./np.cosh(X)) * np.tanh(X)) *(2.*np.exp(1j*2.8*T))
     A = np.array((F1+F2).T, order='C')
 
-    Fmodes, b, V, omega = dmd(A, k=2, modes='standard',
+    Fmodes, b, V, omega = dmd(A, rank=2, modes='standard',
                               return_amplitudes=True, return_vandermonde=True)
     Atilde = Fmodes.dot( np.dot(np.diag(b), V))
     assert np.allclose(A, Atilde, atol_float64)
@@ -29,6 +29,11 @@ def test_dmd():
     assert np.allclose(A, Atilde, atol_float64)
 
     Fmodes, b, V, omega = dmd(A, modes='exact', return_amplitudes=True,
+                              return_vandermonde=True)
+    Atilde = Fmodes.dot( np.dot(np.diag(b), V))
+    assert np.allclose(A, Atilde, atol_float64)
+
+    Fmodes, b, V, omega = dmd(A, modes='exact_scaled', return_amplitudes=True,
                               return_vandermonde=True)
     Atilde = Fmodes.dot( np.dot(np.diag(b), V))
     assert np.allclose(A, Atilde, atol_float64)
