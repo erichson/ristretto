@@ -5,7 +5,7 @@ Nonnegative Matrix Factorization.
 #          Joseph Knox
 # License: GNU General Public License v3.0
 
-from __future__ import division
+from __future__ import division, print_function
 
 import numpy as np
 from scipy import linalg

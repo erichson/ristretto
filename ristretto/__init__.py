@@ -19,7 +19,6 @@ from ristretto.dmd.rdmd_single import rdmd_single
 from ristretto.nmf.nmf_fhals import nmf
 from ristretto.nmf.nmf_fhals import rnmf
 
+
 #PCA
 from ristretto.pca.spca import spca, rspca, robspca
-
-
