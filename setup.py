@@ -1,45 +1,39 @@
-# ristretto: Randomized Dimension Reduction Library
+#! /usr/bin/env python
+#
+# Authors: N. Benjamin Erichson
+#          Joseph Knox
+# License: GNU General Public License v3.0
+from __future__ import print_function
 
-NAME ='ristretto'
-VERSION ='0.1.2'
-DESCRIPTION ='ristretto: Randomized Dimension Reduction Library'
-URL ='https://github.com/erichson/ristretto'
-AUTHOR ='N. Benjamin Erichson'
-EMAIL ='erichson@uw.edu'
-LICENSE ='GNU'
-KEYWORDS=[
-    'randomized algorithms',
-    'dimension reduction',
-    'singular value decomposition',
-    'matrix approximations']
-
-# Install setuptools if it isn't available:
-try:
-    from setuptools import setup, find_packages
-except ImportError:
-    print("The package 'setuptools' is required!")
-
+import os
+import shutil
 from distutils.command.clean import clean as Clean
-from distutils.core import setup
-from distutils.extension import Extension
-from Cython.Build import cythonize
-
 try:
-    from Cython.Distutils import build_ext
+    from setuptools import setup, Extension
 except ImportError:
-    use_cython = False
-else:
-    use_cython = True
+    from distutils.core import setup, Extension
 
+from Cython.Build import cythonize
+from Cython.Distutils import build_ext
 
-# To use a consistent encoding
-from codecs import open
-from os import path
+DISTNAME = 'ristretto'
+DESCRIPTION = 'ristretto: Randomized Dimension Reduction Library'
+with open('README.md') as f:
+    LONG_DESRIPTION = f.read()
+AUTHOR = 'N. Benjamin Erichson'
+AUTHOR_EMAIL = 'erichson@uw.edu'
+URL = 'https://github.com/erichson/ristretto'
+LICENSE = 'GNU'
+KEYWORDS = ['randomized algorithms',
+            'dimension reduction',
+            'singular value decomposition',
+            'matrix approximations']
 
-here = path.abspath(path.dirname(__file__))
+# import restricted version of ristretto to get version
+import ristretto
+VERSION = ristretto.__version__
 
-# Custom clean command to remove build artifacts
-# as used by scikit-learn
+# Custom clean command to remove build artifacts from scikit-learn setup.py
 # https://github.com/scikit-learn/scikit-learn/blob/master/setup.py
 class CleanCommand(Clean):
     description = "Remove build artifacts from the source tree"
@@ -68,64 +62,38 @@ class CleanCommand(Clean):
                 if dirname == '__pycache__':
                     shutil.rmtree(os.path.join(dirpath, dirname))
 
-
-cmdclass = {'clean': CleanCommand}
-
-
-cmdclass = { }
-ext_modules = [ ]
-
-if use_cython:
-    ext_modules += [
-	Extension("ristretto.externals.cdnmf_fast", [ "ristretto/externals/cdnmf_fast.pyx" ]),
-    ]
-    cmdclass.update({ 'build_ext': build_ext })
-else:
-    ext_modules += [
-        Extension("ristretto._fhals_update_shuffle", [ "ristretto/nmf/_fhals_update_shuffle.c" ]),
-    ]
-
-
-INSTALL_REQUIRES=[
-   'cython',
-   'numpy',
-   'scipy'
+extensions = [
+    Extension("ristretto.externals.cdnmf_fast", ["ristretto/externals/cdnmf_fast.pyx"]),
 ]
-
-TESTS_REQUIRE = [
-    'numpy',
-    'scipy'
-]
+cmdclass = {'build_ext' : build_ext, 'clean' : CleanCommand}
 
 
-setup(
-    name=NAME,
-    version=VERSION,
-    description=DESCRIPTION,
-    url=URL,
-    author=AUTHOR,
-    author_email=EMAIL,
-    license=LICENSE,
-    install_requires=INSTALL_REQUIRES,
-    tests_require=TESTS_REQUIRE,
-    keywords=KEYWORDS,
+def setup_package():
+    metadata = dict(name=DISTNAME,
+                    author=AUTHOR,
+                    author_email=AUTHOR_EMAIL,
+                    description=DESCRIPTION,
+                    license=LICENSE,
+                    url=URL,
+                    version=VERSION,
+                    keywords=KEYWORDS,
+                    long_description=LONG_DESRIPTION,
+                    classifiers=[
+                        'Development Status :: 4 - Beta',
+                        'Intended Audience :: Science/Research',
+                        'Topic :: Scientific/Engineering :: Mathematics',
+                        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+                        #'Programming Language :: Python :: 2.7',
+                        #'Programming Language :: Python :: 3.5',
+                        'Programming Language :: Python :: 3.6',
+                    ],
+                    test_suite='nose.collector',
+                    install_requires=['numpy', 'scipy', 'Cython'],
+                    tests_require=['numpy', 'scipy'],
+                    cmdclass=cmdclass,
+                    ext_modules=cythonize(extensions))
 
-    # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
-    classifiers=[
-        'Development Status :: 4 - Beta',
-        'Intended Audience :: Science/Research',
-        'Topic :: Scientific/Engineering :: Mathematics',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-        #'Programming Language :: Python :: 2.7',
-        #'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-    ],
+    setup(**metadata)
 
-    #packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
-    packages=find_packages(exclude=['tests*']),
-    test_suite='nose.collector',
-
-    # cythonize
-    cmdclass = cmdclass,
-    ext_modules = cythonize(ext_modules)
-)
+if __name__ == '__main__':
+    setup_package()
