@@ -12,7 +12,7 @@ import numpy as np
 from scipy import linalg
 from scipy import sparse
 
-from ..dmd.utils import conjugate_transpose
+from ..utils import conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 

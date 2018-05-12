@@ -6,22 +6,16 @@ Randomized Dynamic Mode Decomposition (DMD).
 # License: GNU General Public License v3.0
 
 from __future__ import division
-from functools import partial
 
 import numpy as np
 from scipy import linalg
 
 from .dmd import dmd, _get_amplitudes
-from .utils import conjugate_transpose
+from ..utils import conjugate_transpose, get_sdist_func
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 _VALID_SDISTS = ('uniform', 'normal')
 
-
-def _get_sdist_func(sdist):
-    if sdist == 'uniform':
-        return partial(np.random.uniform, -1, 1)
-    return np.random.standard_normal
 
 
 def rdmd(A, dt=1, k=None, p=10, q=2, sdist='uniform', single_pass=False,
@@ -100,7 +94,7 @@ def rdmd(A, dt=1, k=None, p=10, q=2, sdist='uniform', single_pass=False,
         k = min(m, n)
 
     # distribution to draw random samples
-    sdist_func = _get_sdist_func(sdist)
+    sdist_func = get_sdist_func(sdist)
 
     #Generate a random test matrix Omega
     Omega = sdist_func(size=(n, k+p)).astype(A.dtype)

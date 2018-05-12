@@ -7,8 +7,3 @@ import numpy as np
 from scipy import linalg
 
 
-def conjugate_transpose(A):
-    """Performs conjugate transpose of A"""
-    if A.dtype == np.complexfloating:
-        return A.conj().T
-    return A.T

@@ -10,7 +10,7 @@ from __future__ import division
 import numpy as np
 from scipy import linalg
 
-from .utils import conjugate_transpose
+from ..utils import conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 _VALID_MODES = ('standard', 'exact', 'exact_scaled')

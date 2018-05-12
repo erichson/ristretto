@@ -12,8 +12,7 @@ from __future__ import division
 import numpy as np
 from scipy import linalg
 
-from ..dmd.utils import conjugate_transpose
-from ..dmd.rdmd import _get_sdist_func
+from ..utils import conjugate_transpose, get_sdist_func
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 _VALID_SDISTS = ('uniform', 'normal', 'orthogonal')
@@ -102,7 +101,7 @@ def rsvd_single(A, k=None, p=10, l=None, sdist='uniform'):
         l = 2*p
 
     # distribution to draw random samples
-    sdist_func = _get_sdist_func(sdist)
+    sdist_func = get_sdist_func(sdist)
 
     #Generate a random test matrix Omega
     Omega = sdist_func(size=(n, k+p)).astype(A.dtype)

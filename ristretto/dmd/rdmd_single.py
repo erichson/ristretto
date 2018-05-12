@@ -14,8 +14,7 @@ import numpy as np
 from scipy import linalg
 
 from .dmd import dmd, _get_amplitudes
-from .rdmd import _get_sdist_func
-from .utils import conjugate_transpose
+from ..utils import conjugate_transpose, get_sdist_func
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 _VALID_SDISTS = ('uniform', 'normal', 'orthogonal')
@@ -108,7 +107,7 @@ def rdmd_single(A, dt = 1, k=None, p=10, l=None, sdist='uniform',
         k = min(m, n)
 
     # distribution to draw random samples
-    sdist_func = _get_sdist_func(sdist)
+    sdist_func = get_sdist_func(sdist)
 
     if l is None:
         # default to twice the column oversampling rate.

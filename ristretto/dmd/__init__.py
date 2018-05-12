@@ -8,6 +8,5 @@ Module :mod"`dmd` contains functions for computing the Dynamic Mode Decompositio
 from .dmd import dmd
 from .rdmd import rdmd
 from .rdmd_single import rdmd_single
-from . import utils
 
-__all__ = ['dmd', 'rdmd', 'rdmd_single', 'utils']
+__all__ = ['dmd', 'rdmd', 'rdmd_single']
