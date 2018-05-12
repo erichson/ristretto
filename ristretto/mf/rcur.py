@@ -9,11 +9,8 @@ from __future__ import division
 
 import numpy as np
 from scipy import linalg
-from scipy.sparse import linalg as splinalg
 
-from . interp_decomp import interp_decomp, rinterp_decomp
-
-_VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
+from .interp_decomp import interp_decomp, rinterp_decomp
 
 
 def cur(A, k=None, index_set=False):
@@ -59,22 +56,6 @@ def cur(A, k=None, index_set=False):
     and GPU architectures" (2015).
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
-    # converts A to array
-    A = np.asarray(A)
-    m, n = A.shape
-
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
-    if k is None:
-        # default
-        k = min(m, n)
-
-    if k < 1 or k > min(m, n):
-        raise ValueError("Target rank k must be >= 1 or < min(m, n), not %d" % k)
-
-
     # compute column ID
     J, V = interp_decomp(A, k=k, mode='column', index_set=True)
 
@@ -146,21 +127,6 @@ def rcur(A, k=None, p=10, q=1, index_set=False):
     and GPU architectures" (2015).
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
-    # converts A to array
-    A = np.asarray(A)
-    m, n = A.shape
-
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
-    if k is None:
-        # default
-        k = min(m, n)
-
-    if k < 1 or k > min(m, n):
-        raise ValueError("Target rank k must be >= 1 or < min(m, n), not %d" % k)
-
     # Compute column ID
     J, V = rinterp_decomp(A, k=k, p=p, q=q, mode='column', index_set=True)
 

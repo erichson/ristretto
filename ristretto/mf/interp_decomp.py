@@ -10,6 +10,7 @@ from __future__ import division
 import numpy as np
 from scipy import linalg
 
+from .rqb import rqb
 from ..utils import conjugate_transpose, get_sdist_func
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
@@ -229,12 +230,11 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal', index_se
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     for _ in range(q):
         Y, _ = linalg.qr(conjugate_transpose(Y), mode='economic',
-                         check_finite=False, overwrite_a=True)
+        check_finite=False, overwrite_a=True)
         Z, _ = linalg.qr(A.dot(Y), mode='economic', check_finite=False, overwrite_a=True)
         Y = conjugate_transpose(Z).dot(A)
 
     del Z
-
 
     # Deterministic ID
     J, V = interp_decomp(Y, k=k, mode='column', index_set=True)
@@ -329,57 +329,13 @@ def rinterp_decomp_qb(A, k=None, mode='column', p=10, q=1, sdist='normal', index
         raise ValueError('mode must be one of %s, not %s'
                          % (' '.join(_VALID_MODES), mode))
 
-    if sdist not in _VALID_SDISTS:
-        raise ValueError('sdists must be one of %s, not %s'
-                         % (' '.join(_VALID_SDISTS), sdist))
-
     # converts A to array, raise ValueError if A has inf or nan
     A = np.asarray_chkfinite(A)
     if mode=='row':
         A = conjugate_transpose(A)
 
-    m, n = A.shape
-
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
-    if k is None:
-        # default
-        k = min(m, n)
-
-    if k < 1 or k > min(m, n):
-        raise ValueError("Target rank k must be >= 1 or < min(m, n), not %d" % k)
-
-    # distribution to draw random samples
-    sdist_func = get_sdist_func(sdist)
-
-    #Generate a random test matrix Omega
-    Omega = sdist_func(size=(n, k+p)).astype(A.dtype)
-
-    if A.dtype == np.complexfloating:
-        real_type = np.float32 if A.dtype == np.complex64 else np.float64
-        Omega += 1j * sdist_func(size=(n, k+p)).astype(real_type)
-
-    #Build sample matrix Y : Y = A * Omega (Y approximates range of A)
-    Y = A.dot(Omega)
-    del Omega
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #Orthogonalize Y using economic QR decomposition: Y=QR
-    #If q > 0 perfrom q subspace iterations
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    for _ in range(q):
-        Y, _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True)
-        Z, _ = linalg.qr(conjugate_transpose(A).dot(Y), mode='economic',
-                         check_finite=False, overwrite_a=True)
-        Y = A.dot(Z)
-
-    Q, _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True)
-    del Y, Z
-
-    #Project the data matrix a into a lower dimensional subspace
-    B = conjugate_transpose(Q).dot(A)
+    # compute QB factorization
+    Q, B = rqb(A, k=k, p=p, q=q, sdist=sdist)
 
     # Deterministic ID
     J, V = interp_decomp(B, k=k, mode='column', index_set=True)

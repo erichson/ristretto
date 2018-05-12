@@ -7,15 +7,11 @@ Randomized Singular Value Decomposition
 #          Joseph Knox
 # License: GNU General Public License v3.0
 
-from __future__ import division
-
 import numpy as np
 from scipy import linalg
 
-from ..utils import conjugate_transpose, get_sdist_func
-
-_VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
-_VALID_SDISTS = ('uniform', 'normal', 'orthogonal')
+from .rqb import rqb_single
+from ..utils import conjugate_transpose
 
 
 def rsvd_single(A, k=None, p=10, l=None, sdist='uniform'):
@@ -81,54 +77,8 @@ def rsvd_single(A, k=None, p=10, l=None, sdist='uniform'):
         m , n = A.shape
         flipped = True
 
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
-    if sdist not in _VALID_SDISTS:
-        raise ValueError('sdists must be one of %s, not %s'
-                         % (' '.join(_VALID_SDISTS), sdist))
-
-    if k is None:
-        # default
-        k = min(m, n)
-
-    if k < 1 or k > min(m, n):
-        raise ValueError("Target rank k must be >= 1 or < min(m, n), not %d" % k)
-
-    if l is None:
-        # defalut
-        l = 2*p
-
-    # distribution to draw random samples
-    sdist_func = get_sdist_func(sdist)
-
-    #Generate a random test matrix Omega
-    Omega = sdist_func(size=(n, k+p)).astype(A.dtype)
-    Psi = sdist_func(size=(k+l, m)).astype(A.dtype)
-
-    if A.dtype == np.complexfloating:
-        real_type = np.float32 if A.dtype == np.complex64 else np.float64
-        Omega += 1j * sdist_func(size=(n, k+p)).astype(real_type)
-        Psi += 1j * sdist_func(size=(k+l, m)).astype(real_type)
-
-    if sdist=='orthogonal':
-        Omega, _ = linalg.qr(Omega,  mode='economic', check_finite=False, overwrite_a=True)
-        Psi, _ = linalg.qr(Psi.T,  mode='economic', check_finite=False, overwrite_a=True)
-        Psi = Psi.T
-
-    #Build sample matrix Y = A * Omega and W = Psi * A
-    # NOTE: Y should approximate the column space and W the row space of A
-    Y = A.dot(Omega)
-    W = Psi.dot(A)
-    del Omega
-
-    #Orthogonalize Y using economic QR decomposition: Y=QR
-    Q, _ = linalg.qr(Y,  mode='economic', check_finite=False, overwrite_a=True)
-    U, T = linalg.qr(Psi.dot(Q),  mode='economic', check_finite=False, overwrite_a=False)
-
-    # Form a smaller matrix
-    B = linalg.solve(a=T, b=conjugate_transpose(U).dot(W))
+    # compute QB decomposition
+    Q, B = rqb_single(A, k=k, p=p, l=l, sdist=sdist)
 
     # Singular Value Decomposition
     # NOTE: B = U" * S * Vt

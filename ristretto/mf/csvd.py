@@ -6,7 +6,6 @@ Compressed Singular Value Decomposition.
 # License: GNU General Public License v3.0
 
 from __future__ import division
-import random
 
 import numpy as np
 from scipy import linalg

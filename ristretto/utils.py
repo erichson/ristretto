@@ -7,7 +7,6 @@ Utility Functions.
 from functools import partial
 
 import numpy as np
-from scipy import linalg
 
 
 def get_sdist_func(sdist):

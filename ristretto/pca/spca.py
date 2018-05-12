@@ -10,7 +10,7 @@ from __future__ import division, print_function
 import numpy as np
 from scipy import linalg
 
-from ..mf import rqb
+from ..mf.rqb import rqb
 
 
 def spca(X, n_components=None, alpha=0.1, beta=0.01,

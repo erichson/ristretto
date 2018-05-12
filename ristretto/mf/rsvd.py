@@ -5,15 +5,11 @@ Randomized Singular Value Decomposition
 #          Joseph Knox
 # License: GNU General Public License v3.0
 
-from __future__ import division
-
 import numpy as np
 from scipy import linalg
 
-from ..utils import conjugate_transpose, get_sdist_func
-
-_VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
-_VALID_SDISTS = ('uniform', 'normal')
+from .rqb import rqb
+from ..utils import conjugate_transpose
 
 
 def rsvd(A, k=None, p=10, q=1, sdist='uniform'):
@@ -89,50 +85,7 @@ def rsvd(A, k=None, p=10, q=1, sdist='uniform'):
         m , n = A.shape
         flipped = True
 
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
-    if sdist not in _VALID_SDISTS:
-        raise ValueError('sdists must be one of %s, not %s'
-                         % (' '.join(_VALID_SDISTS), sdist))
-
-    if k is None:
-        # default
-        k = min(m, n)
-
-    if k < 1 or k > min(m, n):
-        raise ValueError("Target rank k must be >= 1 or < min(m, n), not %d" % k)
-
-    # distribution to draw random samples
-    sdist_func = get_sdist_func(sdist)
-
-    #Generate a random test matrix Omega
-    Omega = sdist_func(size=(n, k+p)).astype(A.dtype)
-
-    if A.dtype == np.complexfloating:
-        real_type = np.float32 if A.dtype == np.complex64 else np.float64
-        Omega += 1j * sdist_func(size=(n, k+p)).astype(real_type)
-
-    #Build sample matrix Y : Y = A * Omega (Y approximates range of A)
-    Y = A.dot(Omega)
-    del Omega
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #Orthogonalize Y using economic QR decomposition: Y=QR
-    #If q > 0 perfrom q subspace iterations
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    for _ in range(q):
-        Y, _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True)
-        Z, _ = linalg.qr(conjugate_transpose(A).dot(Y), mode='economic',
-                         check_finite=False, overwrite_a=True)
-        Y = A.dot(Z)
-
-    Q, _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True)
-    del Z
-
-    # Project the data matrix a into a lower dimensional subspace
-    B = conjugate_transpose(Q).dot(A)
+    Q, B = rqb(A, k=k, p=p, q=q, sdist=sdist)
 
     # Compute SVD
     U, s, Vt = linalg.svd(B, compute_uv=True, full_matrices=False,
@@ -143,6 +96,6 @@ def rsvd(A, k=None, p=10, q=1, sdist='uniform'):
 
     # Return Trunc
     if flipped:
-        return conjugate_transpose(Vt)[:, :k], s[:k] , conjugate_transpose(U)[:k, :]
+        return conjugate_transpose(Vt)[:, :k], s[:k], conjugate_transpose(U)[:k, :]
 
     return U[:, :k], s[:k], Vt[:k, :]

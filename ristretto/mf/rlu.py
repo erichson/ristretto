@@ -4,16 +4,15 @@ Randomized LU Decomposition
 # Authors: N. Benjamin Erichson
 #          Joseph Knox
 # License: GNU General Public License v3.0
-from __future__ import division, print_function
+
+from __future__ import division
 
 import numpy as np
 from scipy import linalg
 from scipy import sparse
 
-from ..utils import conjugate_transpose, get_sdist_func
-
-_VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
-_VALID_SDISTS = ('uniform', 'normal')
+from ..sketch import sketch
+from ..utils import conjugate_transpose
 
 
 def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform'):
@@ -81,55 +80,13 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform'):
     Applied and Computational Harmonic Analysis (2016).
     (available at `arXiv <https://arxiv.org/abs/1310.7202>`_).
     """
-    # converts A to array, raise ValueError if A has inf or nan
-    A = np.asarray_chkfinite(A)
-    m, n = A.shape
-
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
-    if sdist not in _VALID_SDISTS:
-        raise ValueError('sdists must be one of %s, not %s'
-                         % (' '.join(_VALID_SDISTS), sdist))
-
-    if k is None:
-        # default
-        k = min(m, n)
-
-    if k < 1 or k > min(m, n):
-        raise ValueError("Target rank k must be >= 1 or < min(m, n), not %d" % k)
-
-    # distribution to draw random samples
-    sdist_func = get_sdist_func(sdist)
-
-    #Generate a random test matrix Omega
-    Omega = sdist_func(size=(n, k+p)).astype(A.dtype)
-
-    if A.dtype == np.complexfloating:
-        real_type = np.float32 if A.dtype == np.complex64 else np.float64
-        Omega += 1j * sdist_func(size=(n, k+p)).astype(real_type)
-
-    #Build sample matrix Y : Y = A * Omega (Y approximates range of A)
-    Y = A.dot(Omega)
-    del Omega
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #Orthogonalize Y using economic QR decomposition: Y=QR
-    #If q > 0 perfrom q subspace iterations
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    for _ in range(q):
-        Y, _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True)
-        Z, _ = linalg.qr(conjugate_transpose(A).dot(Y), mode='economic',
-                         check_finite=False, overwrite_a=True)
-        Y = A.dot(Z)
-
-    Q, _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True)
-    del Y, Z
+    # get random sketch
+    S = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
+               axis=1, check_finite=True)
 
     # Compute pivoted LU decompostion of the orthonormal basis matrix Q.
     # Q = P * L * U
-    P, L_tilde, _ = linalg.lu(Q, permute_l=False, overwrite_a=True, check_finite=False)
+    P, L_tilde, _ = linalg.lu(S, permute_l=False, overwrite_a=True, check_finite=False)
     _, r ,_ = sparse.find(P.T)
 
     # Truncate L_tilde
