@@ -1,6 +1,11 @@
 """
 Compressed Singular Value Decomposition.
 """
+# TODO: implement 'ortho' option
+# TODO: implement 'method' option
+# TODO: implement 'scaled' option
+# TODO; implement 'sdists' for csvd_double
+
 # Authors: N. Benjamin Erichson
 #          Joseph Knox
 # License: GNU General Public License v3.0
@@ -14,6 +19,46 @@ from scipy import sparse
 from ..utils import conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
+_VALID_SDISTS = ('gaussian', 'spixel', 'sparse')
+
+
+def _sparse_sample(A, k, p, sdist, formatS, check_finite=False):
+    # converts A to array, raise ValueError if A has inf or nan
+    A = np.asarray_chkfinite(A) if check_finite else np.asarray(A)
+    m, n = A.shape
+
+    if A.dtype not in _VALID_DTYPES:
+        raise ValueError('A.dtype must be one of %s, not %s'
+                         % (' '.join(_VALID_DTYPES), A.dtype))
+
+    if sdist not in _VALID_SDISTS:
+        raise ValueError('sdists must be one of %s, not %s'
+                         % (' '.join(_VALID_SDISTS), sdist))
+
+    if A.dtype == np.complexfloating:
+        real_type = np.float32 if A.dtype == np.complex64 else np.float64
+
+    # Generate random measurement matrix and compress input matrix
+    if sdist=='gaussian':
+        C = np.random.standard_normal(size=(k+p, m)).astype(A.dtype)
+
+        if A.dtype == np.complexfloating:
+            C += 1j * np.random.standard_normal(size=(k+p , m)).astype(real_type)
+        Y = C.dot(A)
+
+    elif sdist=='spixel':
+        C = np.random.sample(m, k+p)
+        Y = A[C, :]
+
+    else:
+        # sdist == 'sparse'
+        density = m / np.log(m)
+        C = sparse.rand(k+p, m, density=density**-1, format=formatS,
+                        dtype=real_type, random_state=None)
+        C.data = np.array(np.where(C.data >= 0.5, 1, -1), dtype=A.dtype)
+        Y = C.dot(A)
+
+    return Y
 
 
 def csvd(A, k=None, p=10, sdist='sparse', formatS='csr'):
@@ -26,9 +71,6 @@ def csvd(A, k=None, p=10, sdist='sparse', formatS='csr'):
     singular vectors are the columns of the real or complex unitary matrix `V`.
     The singular values `s` are non-negative and real numbers.
 
-    The parameter `c` specifies the number of measurements and is required to
-    be `c>k`.
-
 
     Parameters
     ----------
@@ -38,20 +80,11 @@ def csvd(A, k=None, p=10, sdist='sparse', formatS='csr'):
     k : int
         `k` is the target rank of the low-rank decomposition, k << min(m,n).
 
-    c : int
-        `c` sets the number of measurments.
+    p : int
+        `p` oversampling parameter. The number of measurements will be `p+k`
 
     sdist : str `{gaussian', 'spixel', 'sparse'}`
         Defines the sampling distribution.
-
-    ortho : str `{True, False}`
-        If `True` the left singular values are orthonormalized.
-
-    method :   `{SVD, QR}`
-        Defines the method to compute the orthnormalization step.
-
-    scaled : str `{True, False}`
-        If `True` the singular values are rescaled.
 
     fortmatS : str `{csr, coo}`
         Defines the format of the sparse measurement matrix.
@@ -71,46 +104,13 @@ def csvd(A, k=None, p=10, sdist='sparse', formatS='csr'):
 
     Notes
     -----
-    If the option `ortho=True` is selected, then the approximation is more
-    accurate.
-
     If the sparse sampling distribution is used, the appropriate format for
     the sparse measurement matrix is crucial. In generall `csr` is the optimal
     format, but sometimes `coo` gives a better performance. Sparse matricies
     are computational efficient if the leading dimension is m>5000.
     """
-    # converts A to array, raise ValueError if A has inf or nan
-    A = np.asarray_chkfinite(A)
-    m, n = A.shape
-
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
-    if A.dtype == np.complexfloating:
-        real_type = np.float32 if A.dtype == np.complex64 else np.float64
-
-    # Generate random measurement matrix and compress input matrix
-    if sdist=='gaussian':
-        C = np.random.standard_normal(size=(k+p, m)).astype(A.dtype)
-
-        if A.dtype == np.complexfloating:
-            C += 1j * np.random.standard_normal(size=(k+p , m)).astype(real_type)
-        Y = C.dot(A)
-
-    elif sdist=='spixel':
-        C = np.random.sample(m, k+p)
-        Y =  A[C , :]
-
-    elif sdist=='sparse':
-        density = m / np.log(m)
-        C = sparse.rand(k+p, m, density=density**-1, format=formatS,
-                        dtype=real_type, random_state=None)
-        C.data = np.array(np.where(C.data >= 0.5, 1, -1), dtype=A.dtype)
-        Y = C.dot(A)
-
-    else:
-        raise ValueError('Sampling distribution is not supported.')
+    # get sparse sketch of A
+    Y = _sparse_sample(A, k, p, sdist, formatS, check_finite=True)
 
     # Compute singular value decomposition
     _ , s , Vh = linalg.svd(Y, full_matrices=False, overwrite_a=True, check_finite=False)
@@ -137,9 +137,6 @@ def csvd2(A, k=None, p=10, sdist='sparse', formatS='csr'):
     singular vectors are the columns of the real or complex unitary matrix `V`.
     The singular values `s` are non-negative and real numbers.
 
-    The parameter `c` specifies the number of measurements and is required to
-    be `c>k`.
-
 
     Parameters
     ----------
@@ -149,20 +146,11 @@ def csvd2(A, k=None, p=10, sdist='sparse', formatS='csr'):
     k : int
         `k` is the target rank of the low-rank decomposition, k << min(m,n).
 
-    c : int
-        `c` sets the number of measurments.
+    p : int
+        `p` oversampling parameter. The number of measurements will be `p+k`
 
     sdist : str `{gaussian', 'spixel', 'sparse'}`
         Defines the sampling distribution.
-
-    ortho : str `{True, False}`
-        If `True` the left singular values are orthonormalized.
-
-    method :   `{SVD, QR}`
-        Defines the method to compute the orthnormalization step.
-
-    scaled : str `{True, False}`
-        If `True` the singular values are rescaled.
 
     fortmatS : str `{csr, coo}`
         Defines the format of the sparse measurement matrix.
@@ -181,47 +169,13 @@ def csvd2(A, k=None, p=10, sdist='sparse', formatS='csr'):
 
     Notes
     -----
-    If the option `ortho=True` is selected, then the approximation is more
-    accurate.
-
     If the sparse sampling distribution is used, the appropriate format for
     the sparse measurement matrix is crucial. In generall `csr` is the optimal
     format, but sometimes `coo` gives a better performance. Sparse matricies
     are computational efficient if the leading dimension is m>5000.
     """
-    # converts A to array, raise ValueError if A has inf or nan
-    A = np.asarray_chkfinite(A)
-    m, n = A.shape
-
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
-    if A.dtype == np.complexfloating:
-        real_type = np.float32 if A.dtype == np.complex64 else np.float64
-
-    # Generate random measurement matrix and compress input matrix
-    if sdist=='gaussian':
-        C = np.random.standard_normal(size=(k+p, m)).astype(A.dtype)
-
-        if A.dtype == np.complexfloating:
-            C += 1j * np.random.standard_normal(size=(k+p , m)).astype(real_type)
-        Y = C.dot(A)
-
-    elif sdist=='spixel':
-        C = np.random.sample(m, k+p)
-        Y =  A[C , :]
-
-    elif sdist=='sparse':
-        density = m / np.log(m)
-        C = sparse.rand(k+p, m, density=density**-1, format=formatS,
-                        dtype=real_type, random_state=None)
-        C.data = np.array(np.where(C.data >= 0.5, np.sqrt(density), -np.sqrt(density)),
-                          dtype=A.dtype)
-        Y = C.dot(A)
-
-    else:
-        raise ValueError('Sampling distribution is not supported.')
+    # get sparse sketch of A
+    Y = _sparse_sample(A, k, p, sdist, formatS, check_finite=True)
 
     # Compute singular value decomposition
     B = Y.dot(conjugate_transpose(Y))
@@ -244,7 +198,7 @@ def csvd2(A, k=None, p=10, sdist='sparse', formatS='csr'):
         T = T[:, :k]
 
     mask = s > 0
-    s[mask] = s[mask]**0.5
+    s[mask] = np.sqrt(s[mask])
 
     V = conjugate_transpose(Y).dot(T[:,mask] / s[mask])
 
@@ -255,7 +209,7 @@ def csvd2(A, k=None, p=10, sdist='sparse', formatS='csr'):
     return U, s, Vhstar.dot(conjugate_transpose(V))
 
 
-def csvd_double(A, k=None, p=10, sdist='sparse', formatS='csr'):
+def csvd_double(A, k=None, p=10, formatS='csr'):
     """Compressed Singular Value Decomposition.
 
     Row compressed algorithm for computing the approximate low-rank singular value
@@ -264,9 +218,6 @@ def csvd_double(A, k=None, p=10, sdist='sparse', formatS='csr'):
     vectors are the columns of the real or complex unitary matrix `U`. The right
     singular vectors are the columns of the real or complex unitary matrix `V`.
     The singular values `s` are non-negative and real numbers.
-
-    The parameter `c` specifies the number of measurements and is required to
-    be `c>k`.
 
 
     Parameters
@@ -277,20 +228,8 @@ def csvd_double(A, k=None, p=10, sdist='sparse', formatS='csr'):
     k : int
         `k` is the target rank of the low-rank decomposition, k << min(m,n).
 
-    c : int
-        `c` sets the number of measurments.
-
-    sdist : str `{gaussian', 'spixel', 'sparse'}`
-        Defines the sampling distribution.
-
-    ortho : str `{True, False}`
-        If `True` the left singular values are orthonormalized.
-
-    method :   `{SVD, QR}`
-        Defines the method to compute the orthnormalization step.
-
-    scaled : str `{True, False}`
-        If `True` the singular values are rescaled.
+    p : int
+        `p` oversampling parameter. The number of measurements will be `p+k`
 
     fortmatS : str `{csr, coo}`
         Defines the format of the sparse measurement matrix.
@@ -305,17 +244,6 @@ def csvd_double(A, k=None, p=10, sdist='sparse', formatS='csr'):
 
     Vh : array_like
         Left singular values, array of shape `(k, n)`.
-
-
-    Notes
-    -----
-    If the option `ortho=True` is selected, then the approximation is more
-    accurate.
-
-    If the sparse sampling distribution is used, the appropriate format for
-    the sparse measurement matrix is crucial. In generall `csr` is the optimal
-    format, but sometimes `coo` gives a better performance. Sparse matricies
-    are computational efficient if the leading dimension is m>5000.
     """
     # converts A to array, raise ValueError if A has inf or nan
     A = np.asarray_chkfinite(A)
@@ -327,8 +255,8 @@ def csvd_double(A, k=None, p=10, sdist='sparse', formatS='csr'):
 
     # Generate random measurement matrix and compress input matrix
     # Generate a random test matrix Omega
-    Omega = random.sample(n, k+p)
-    Psi = random.sample(m, k+p)
+    Omega = np.random.sample(n, k+p)
+    Psi = np.random.sample(m, k+p)
 
     L, _ = linalg.qr(A[:, Omega], mode='economic', check_finite=False, overwrite_a=False)
     R, _ = linalg.qr(A[Psi, :].T, mode='economic', check_finite=False, overwrite_a=False)

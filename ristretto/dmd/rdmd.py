@@ -8,7 +8,7 @@ Randomized Dynamic Mode Decomposition (DMD).
 from __future__ import division
 
 from .dmd import dmd, _get_amplitudes
-from ..mf import rqb
+from ..mf.rqb import rqb
 
 
 def rdmd(A, dt=1, k=None, p=10, q=2, sdist='uniform', single_pass=False,
