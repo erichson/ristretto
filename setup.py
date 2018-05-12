@@ -1,17 +1,19 @@
 # ristretto: Randomized Dimension Reduction Library
 
-
 NAME ='ristretto'
 VERSION ='0.1.2'
 DESCRIPTION ='ristretto: Randomized Dimension Reduction Library'
-URL ='https://github.com/Benli11/ristretto'
-AUTHER ='N. Benjamin Erichson'
+URL ='https://github.com/erichson/ristretto'
+AUTHOR ='N. Benjamin Erichson'
 EMAIL ='erichson@uw.edu'
 LICENSE ='GNU'
+KEYWORDS=[
+    'randomized algorithms',
+    'dimension reduction',
+    'singular value decomposition',
+    'matrix approximations']
 
-
-      
-# Install setuptools if it isn't available:     
+# Install setuptools if it isn't available:
 try:
     from setuptools import setup, find_packages
 except ImportError:
@@ -51,7 +53,7 @@ class CleanCommand(Clean):
             print('Will remove generated .c files')
         if os.path.exists('build'):
             shutil.rmtree('build')
-        for dirpath, dirnames, filenames in os.walk('sklearn'):
+        for dirpath, dirnames, filenames in os.walk('ristretto'):
             for filename in filenames:
                 if any(filename.endswith(suffix) for suffix in
                        (".so", ".pyd", ".dll", ".pyc")):
@@ -75,70 +77,55 @@ ext_modules = [ ]
 
 if use_cython:
     ext_modules += [
-	Extension("ristretto._fhals_update_shuffle", [ "ristretto/nmf/_fhals_update_shuffle.pyx" ]),
-        Extension("ristretto._fhals_update_shuffle", [ "ristretto/nmf/_fhals_update_shuffle.pyx" ]),
+	Extension("ristretto.externals.cdnmf_fast", [ "ristretto/externals/cdnmf_fast.pyx" ]),
     ]
     cmdclass.update({ 'build_ext': build_ext })
 else:
     ext_modules += [
         Extension("ristretto._fhals_update_shuffle", [ "ristretto/nmf/_fhals_update_shuffle.c" ]),
-        Extension("ristretto._fhals_update_shuffle", [ "ristretto/nmf/_fhals_update_shuffle.c" ]),
     ]
 
 
-
-install_requires=[
+INSTALL_REQUIRES=[
    'cython',
    'numpy',
    'scipy'
 ]
 
-tests_require = ['numpy',
-   		 'scipy']
+TESTS_REQUIRE = [
+    'numpy',
+    'scipy'
+]
 
 
 setup(
-    name = NAME,
-    version = VERSION,
-    description = DESCRIPTION,
-    url = URL,
-    author = AUTHER,
-    author_email = EMAIL,
-    license = LICENSE,
-    install_requires = install_requires,
-    tests_require = tests_require,
+    name=NAME,
+    version=VERSION,
+    description=DESCRIPTION,
+    url=URL,
+    author=AUTHOR,
+    author_email=EMAIL,
+    license=LICENSE,
+    install_requires=INSTALL_REQUIRES,
+    tests_require=TESTS_REQUIRE,
+    keywords=KEYWORDS,
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        # How mature is this project? Common values are
-        #   3 - Alpha
-        #   4 - Beta
-        #   5 - Production/Stable
         'Development Status :: 4 - Beta',
-
-        # Indicate who your project is intended for
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Mathematics',
-
-        # Pick your license as you wish (should match "license" above)
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-
         #'Programming Language :: Python :: 2.7',
         #'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
 
-    # What does your project relate to?
-    keywords='randomized algorithms, dimension reduction, singular value decomposition, matrix approximations',
-
     #packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     packages=find_packages(exclude=['tests*']),
-    test_suite='nose.collector',	
+    test_suite='nose.collector',
 
     # cythonize
     cmdclass = cmdclass,
-    ext_modules = ext_modules
+    ext_modules = cythonize(ext_modules)
 )
-
-
-

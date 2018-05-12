@@ -10,7 +10,8 @@ from __future__ import division, print_function
 import numpy as np
 from scipy import linalg
 
-from ristretto._fhals_update_shuffle import _fhals_update_shuffle
+from ..externals.cdnmf_fast import _update_cdnmf_fast as _fhals_update_shuffle
+from ..externals.nmf import _initialize_nmf
 from ..mf.rsvd import rsvd
 
 _VALID_DTYPES = (np.float32, np.float64)
