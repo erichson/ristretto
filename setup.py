@@ -4,17 +4,13 @@
 #          Joseph Knox
 # License: GNU General Public License v3.0
 from __future__ import print_function
-
 import os
+import sys
 import shutil
+from setuptools import setup, Extension
 from distutils.command.clean import clean as Clean
-try:
-    from setuptools import setup, Extension
-except ImportError:
-    from distutils.core import setup, Extension
+from distutils.version import LooseVersion
 
-from Cython.Build import cythonize
-from Cython.Distutils import build_ext
 
 DISTNAME = 'ristretto'
 DESCRIPTION = 'ristretto: Randomized Dimension Reduction Library'
@@ -29,9 +25,27 @@ KEYWORDS = ['randomized algorithms',
             'singular value decomposition',
             'matrix approximations']
 
+
+if sys.version_info[0] < 3:
+    # Python 2.*
+    import __builtin__ as builtins
+else:
+    import builtins
+
+
+# This is a bit (!) hackish: we are setting a global variable so that the main
+# ristretto __init__ can detect if it is being loaded by the setup routine, to
+# avoid attempting to load components that aren't built yet
+builtins.__RISTRETTO_SETUP__ = True
+
 # import restricted version of ristretto to get version
 import ristretto
+
 VERSION = ristretto.__version__
+
+SCIPY_MIN_VERSION = '0.0.13'
+NUMPY_MIN_VERSION = '1.8.2'
+CYTHON_MIN_VERSION = '0.23'
 
 # Custom clean command to remove build artifacts from scikit-learn setup.py
 # https://github.com/scikit-learn/scikit-learn/blob/master/setup.py
@@ -62,10 +76,43 @@ class CleanCommand(Clean):
                 if dirname == '__pycache__':
                     shutil.rmtree(os.path.join(dirpath, dirname))
 
+# Custom cythonize command to check if Cython installed and up to date from scikit-learn
+# https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/_build_utils/__init__.py#L63
+def cythonize_extensions(extensions):
+    """Tweaks for building extensions between release and development mode."""
+    message = ('Please install cython with a version >= {0} in order '
+               'to build a ristretto development version.').format(
+                   CYTHON_MIN_VERSION)
+    try:
+        import Cython
+        if LooseVersion(Cython.__version__) < CYTHON_MIN_VERSION:
+            message += ' Your version of Cython was {0}.'.format(Cython.__version__)
+            raise ValueError(message)
+        from Cython.Build import cythonize
+    except ImportError as exc:
+        exc.args += (message,)
+        raise
+
+    return cythonize(extensions)
+
+
 extensions = [
     Extension("ristretto.externals.cdnmf_fast", ["ristretto/externals/cdnmf_fast.pyx"]),
 ]
-cmdclass = {'build_ext' : build_ext, 'clean' : CleanCommand}
+ext_modules = cythonize_extensions(extensions)
+
+cmdclass = {'clean' : CleanCommand}
+
+extra_setuptools_args = dict(
+    zip_safe=False,
+    include_package_data=True,
+    extras_require={
+        'alldeps': (
+            'numpy >= {0}'.format(NUMPY_MIN_VERSION),
+            'scipy >= {0}'.format(SCIPY_MIN_VERSION),
+        ),
+    },
+)
 
 
 def setup_package():
@@ -88,12 +135,12 @@ def setup_package():
                         'Programming Language :: Python :: 3.6',
                     ],
                     test_suite='nose.collector',
-                    install_requires=['numpy', 'scipy', 'Cython'],
-                    tests_require=['numpy', 'scipy'],
                     cmdclass=cmdclass,
-                    ext_modules=cythonize(extensions))
+                    ext_modules=ext_modules,
+                    **extra_setuptools_args)
 
     setup(**metadata)
+
 
 if __name__ == '__main__':
     setup_package()
