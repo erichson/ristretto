@@ -1,11 +1,41 @@
-from .rsvd import rsvd
-from .csvd import csvd
-from .rqb import rqb
-from .rlu import rlu
-from .rsvd_single import rsvd_single
-from .interp_decomp import interp_decomp, rinterp_decomp, rinterp_decomp_qb 
-from .rcur import cur, rcur
-from .reigen import reigh, reigh_nystroem, reigh_nystroem_col
+"""
+Module containg algorithms for matrix factorization.
+"""
+# Authors: N. Benjamin Erichson
+#          Joseph Knox
+# License: GNU General Public License v3.0
 
-__all__ = ['rsvd', 'rqb', 'rlu', 'rsvd_single','interp_decomp','rinterp_decomp','rinterp_decomp_qb', 'cur', 'rcur', 'reigh', 'reigh_nystroem',
-'reigh_nystroem_col']
+from .csvd import csvd
+
+from .interp_decomp import interp_decomp
+from .interp_decomp import rinterp_decomp
+from .interp_decomp import rinterp_decomp_qb
+
+from .reigen import reigh
+from .reigen import reigh_nystroem
+from .reigen import reigh_nystroem_col
+
+from .rcur import cur
+from .rcur import rcur
+
+from .rlu import rlu
+
+from .rqb import rqb
+
+from .rsvd import rsvd
+
+from .rsvd_single import rsvd_single
+
+
+__all__ = ['interp_decomp',
+           'rinterp_decomp',
+           'rinterp_decomp_qb',
+           'reigh',
+           'reigh_nystroem',
+           'reigh_nystroem_col',
+           'cur',
+           'rcur',
+           'rlu',
+           'rqb',
+           'rsvd',
+           'rsvd_single']

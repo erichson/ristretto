@@ -32,3 +32,8 @@ def test_dmd():
                               return_vandermonde=True)
     Atilde = Fmodes.dot( np.dot(np.diag(b), V))
     assert np.allclose(A, Atilde, atol_float64)
+
+    Fmodes, b, V, omega = dmd(A, modes='exact_scaled', return_amplitudes=True,
+                              return_vandermonde=True)
+    Atilde = Fmodes.dot( np.dot(np.diag(b), V))
+    assert np.allclose(A, Atilde, atol_float64)

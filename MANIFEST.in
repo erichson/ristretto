@@ -1,4 +1,7 @@
+recursive-include data *
+recursive-include tests *
+recursive-include tutorial *
 recursive-include ristretto *.c *.pyx
 
-
-
+include LICENSE
+include README.md

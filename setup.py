@@ -1,43 +1,53 @@
-# ristretto: Randomized Dimension Reduction Library
-
-
-NAME ='ristretto'
-VERSION ='0.1.2'
-DESCRIPTION ='ristretto: Randomized Dimension Reduction Library'
-URL ='https://github.com/Benli11/ristretto'
-AUTHER ='N. Benjamin Erichson'
-EMAIL ='erichson@uw.edu'
-LICENSE ='GNU'
-
-
-      
-# Install setuptools if it isn't available:     
-try:
-    from setuptools import setup, find_packages
-except ImportError:
-    print("The package 'setuptools' is required!")
-
+#! /usr/bin/env python
+#
+# Authors: N. Benjamin Erichson
+#          Joseph Knox
+# License: GNU General Public License v3.0
+from __future__ import print_function
+import os
+import sys
+import shutil
+from setuptools import setup, Extension
 from distutils.command.clean import clean as Clean
-from distutils.core import setup
-from distutils.extension import Extension
-from Cython.Build import cythonize
+from distutils.version import LooseVersion
 
-try:
-    from Cython.Distutils import build_ext
-except ImportError:
-    use_cython = False
+
+DISTNAME = 'ristretto'
+DESCRIPTION = 'ristretto: Randomized Dimension Reduction Library'
+with open('README.md') as f:
+    LONG_DESRIPTION = f.read()
+AUTHOR = 'N. Benjamin Erichson'
+AUTHOR_EMAIL = 'erichson@uw.edu'
+URL = 'https://github.com/erichson/ristretto'
+LICENSE = 'GNU'
+KEYWORDS = ['randomized algorithms',
+            'dimension reduction',
+            'singular value decomposition',
+            'matrix approximations']
+
+
+if sys.version_info[0] < 3:
+    # Python 2.*
+    import __builtin__ as builtins
 else:
-    use_cython = True
+    import builtins
 
 
-# To use a consistent encoding
-from codecs import open
-from os import path
+# This is a bit (!) hackish: we are setting a global variable so that the main
+# ristretto __init__ can detect if it is being loaded by the setup routine, to
+# avoid attempting to load components that aren't built yet
+builtins.__RISTRETTO_SETUP__ = True
 
-here = path.abspath(path.dirname(__file__))
+# import restricted version of ristretto to get version
+import ristretto
 
-# Custom clean command to remove build artifacts
-# as used by scikit-learn
+VERSION = ristretto.__version__
+
+SCIPY_MIN_VERSION = '0.0.13'
+NUMPY_MIN_VERSION = '1.8.2'
+CYTHON_MIN_VERSION = '0.23'
+
+# Custom clean command to remove build artifacts from scikit-learn setup.py
 # https://github.com/scikit-learn/scikit-learn/blob/master/setup.py
 class CleanCommand(Clean):
     description = "Remove build artifacts from the source tree"
@@ -51,7 +61,7 @@ class CleanCommand(Clean):
             print('Will remove generated .c files')
         if os.path.exists('build'):
             shutil.rmtree('build')
-        for dirpath, dirnames, filenames in os.walk('sklearn'):
+        for dirpath, dirnames, filenames in os.walk('ristretto'):
             for filename in filenames:
                 if any(filename.endswith(suffix) for suffix in
                        (".so", ".pyd", ".dll", ".pyc")):
@@ -66,79 +76,71 @@ class CleanCommand(Clean):
                 if dirname == '__pycache__':
                     shutil.rmtree(os.path.join(dirpath, dirname))
 
+# Custom cythonize command to check if Cython installed and up to date from scikit-learn
+# https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/_build_utils/__init__.py#L63
+def cythonize_extensions(extensions):
+    """Tweaks for building extensions between release and development mode."""
+    message = ('Please install cython with a version >= {0} in order '
+               'to build a ristretto development version.').format(
+                   CYTHON_MIN_VERSION)
+    try:
+        import Cython
+        if LooseVersion(Cython.__version__) < CYTHON_MIN_VERSION:
+            message += ' Your version of Cython was {0}.'.format(Cython.__version__)
+            raise ValueError(message)
+        from Cython.Build import cythonize
+    except ImportError as exc:
+        exc.args += (message,)
+        raise
 
-cmdclass = {'clean': CleanCommand}
+    return cythonize(extensions)
 
 
-cmdclass = { }
-ext_modules = [ ]
-
-if use_cython:
-    ext_modules += [
-	Extension("ristretto._fhals_update_shuffle", [ "ristretto/nmf/_fhals_update_shuffle.pyx" ]),
-        Extension("ristretto._fhals_update_shuffle", [ "ristretto/nmf/_fhals_update_shuffle.pyx" ]),
-    ]
-    cmdclass.update({ 'build_ext': build_ext })
-else:
-    ext_modules += [
-        Extension("ristretto._fhals_update_shuffle", [ "ristretto/nmf/_fhals_update_shuffle.c" ]),
-        Extension("ristretto._fhals_update_shuffle", [ "ristretto/nmf/_fhals_update_shuffle.c" ]),
-    ]
-
-
-
-install_requires=[
-   'cython',
-   'numpy',
-   'scipy'
+extensions = [
+    Extension("ristretto.externals.cdnmf_fast", ["ristretto/externals/cdnmf_fast.pyx"]),
 ]
+ext_modules = cythonize_extensions(extensions)
 
-tests_require = ['numpy',
-   		 'scipy']
+cmdclass = {'clean' : CleanCommand}
 
-
-setup(
-    name = NAME,
-    version = VERSION,
-    description = DESCRIPTION,
-    url = URL,
-    author = AUTHER,
-    author_email = EMAIL,
-    license = LICENSE,
-    install_requires = install_requires,
-    tests_require = tests_require,
-
-    # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
-    classifiers=[
-        # How mature is this project? Common values are
-        #   3 - Alpha
-        #   4 - Beta
-        #   5 - Production/Stable
-        'Development Status :: 4 - Beta',
-
-        # Indicate who your project is intended for
-        'Intended Audience :: Science/Research',
-        'Topic :: Scientific/Engineering :: Mathematics',
-
-        # Pick your license as you wish (should match "license" above)
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-
-        #'Programming Language :: Python :: 2.7',
-        #'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-    ],
-
-    # What does your project relate to?
-    keywords='randomized algorithms, dimension reduction, singular value decomposition, matrix approximations',
-
-    #packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
-    packages=find_packages(exclude=['tests*']),
-    test_suite='nose.collector',	
-
-    # cythonize
-    cmdclass = cmdclass,
-    ext_modules = ext_modules
+extra_setuptools_args = dict(
+    zip_safe=False,
+    include_package_data=True,
+    extras_require={
+        'alldeps': (
+            'numpy >= {0}'.format(NUMPY_MIN_VERSION),
+            'scipy >= {0}'.format(SCIPY_MIN_VERSION),
+        ),
+    },
 )
 
 
+def setup_package():
+    metadata = dict(name=DISTNAME,
+                    author=AUTHOR,
+                    author_email=AUTHOR_EMAIL,
+                    description=DESCRIPTION,
+                    license=LICENSE,
+                    url=URL,
+                    version=VERSION,
+                    keywords=KEYWORDS,
+                    long_description=LONG_DESRIPTION,
+                    classifiers=[
+                        'Development Status :: 4 - Beta',
+                        'Intended Audience :: Science/Research',
+                        'Topic :: Scientific/Engineering :: Mathematics',
+                        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+                        'Programming Language :: Python :: 2.7',
+                        'Programming Language :: Python :: 3.5',
+                        'Programming Language :: Python :: 3.6',
+                    ],
+                    test_suite='nose.collector',
+                    cmdclass=cmdclass,
+                    ext_modules=ext_modules,
+                    **extra_setuptools_args)
 
+    setup(**metadata)
+
+
+if __name__ == '__main__':
+    setup_package()

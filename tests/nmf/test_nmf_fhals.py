@@ -1,7 +1,7 @@
 import numpy as np
 
 from ristretto.nmf import nmf, rnmf
-from ristretto.util import nmf_data
+from ristretto.utils import nmf_data
 
 
 atol_float32 = 1e-4
