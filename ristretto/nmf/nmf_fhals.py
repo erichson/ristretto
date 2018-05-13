@@ -10,10 +10,10 @@ from __future__ import division, print_function
 import numpy as np
 from scipy import linalg
 
+from ..mf.rqb import rqb
 from ..externals.cdnmf_fast import _update_cdnmf_fast as _fhals_update_shuffle
 from ..externals.nmf import _initialize_nmf
-
-_VALID_DTYPES = (np.float32, np.float64)
+from ..externals.utils import check_random_state, check_non_negative
 
 
 def nmf(A, k, init='nndsvd', shuffle=False,
@@ -118,19 +118,9 @@ def nmf(A, k, init='nndsvd', shuffle=False,
     >>> import ristretto as ro
     >>> W, H = ro.rnm(X, k=2, p=0)
     """
-    # converts A to array, raise ValueError if A has inf or nan
-    A = np.asarray_chkfinite(A)
-    m, n = A.shape
-
-    if (A < 0).any():
-        raise ValueError("Input matrix with nonnegative elements is required.")
-
-    if random_state is None or isinstance(random_state, int):
-            rns = np.random.RandomState(random_state)
-    elif isinstance(random_state, np.random.RandomState):
-            rns = random_state
-    else:
-        raise ValueError('Seed should be None, int or np.random.RandomState')
+    # checks
+    check_non_negative(A, 'ristretto.nmf.nmf')
+    rns = check_random_state(random_state)
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Initialization methods for factor matrices W and H
@@ -300,8 +290,9 @@ def rnmf(A, k, p=20, q=2, init='nndsvd', shuffle=False,
     >>> import ristretto as ro
     >>> W, H = ro.rnmf(X, k=2, p=0)
     """
-    # converts A to array, raise ValueError if A has inf or nan
-    A = np.asarray_chkfinite(A)
+    # checks
+    check_non_negative(A, 'ristretto.nmf.nmf')
+    rns = check_random_state(random_state)
     m, n = A.shape
 
     flipped = False
@@ -310,40 +301,8 @@ def rnmf(A, k, p=20, q=2, init='nndsvd', shuffle=False,
         m, n = A.shape
         flipped = True
 
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
-    if (A < 0).any():
-        raise ValueError("Input matrix with nonnegative elements is required.")
-
-    if random_state is None or isinstance(random_state, int):
-        rns = np.random.RandomState(random_state)
-    elif isinstance(random_state, np.random.RandomState):
-        rns = random_state
-    else:
-        raise ValueError('Seed should be None, int or np.random.RandomState')
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Compute QB decomposition
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #Build sample matrix Y : Y = A * Omega, where Omega is a random test matrix
-    Omega = rns.rand(n, k+p).astype(A.dtype)
-    Y = A.dot(Omega)
-    del Omega
-
-    #If q > 0 perfrom q subspace iterations
-    for i in range(q):
-        Y , _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True)
-        Z , _ = linalg.qr(A.T.dot(Y), mode='economic', check_finite=False, overwrite_a=True)
-        Y = A.dot(Z)
-    del Z
-
-    #Orthogonalize Y using economic QR decomposition: Y = QR
-    Q , _ = linalg.qr( Y,  mode='economic', check_finite=False, overwrite_a=True)
-
-    #Project input data to low-dimensional space
-    B = Q.T.dot(A)
+    Q, B = rqb(A, k=k, p=p, q=q, sdist=None)
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Initialization methods for factor matrices W and H
@@ -352,7 +311,6 @@ def rnmf(A, k, p=20, q=2, init='nndsvd', shuffle=False,
     W, H = _initialize_nmf(A, k, init=init, eps=1e-6, random_state=rns)
     Ht = np.array(H.T, order='C')
     W_tilde = Q.T.dot(W)
-    del A
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Iterate the HALS algorithm until convergence or maxiter is reached

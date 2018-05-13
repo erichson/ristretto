@@ -12,7 +12,7 @@ from scipy import linalg
 
 from .utils import conjugate_transpose
 
-_VALID_DISTRIBUTIONS = ('uniform', 'normal')
+_VALID_DISTRIBUTIONS = ('uniform', 'normal', None)
 _VALID_SINGLE_DISTRIBUTIONS = ('uniform', 'normal', 'orthogonal')
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 _QR_KWARGS = dict(mode='economic', check_finite=False, overwrite_a=True)
@@ -30,13 +30,19 @@ def _output_rank_check(A, output_rank):
     return rank
 
 def _get_distribution_func(distribution):
-    if distribution == 'uniform':
+    """Helper function returning numpy sampling distribution function"""
+    if distribution is None:
+        def wrapped_rand(size=None):
+            # have to wrap np.random.rand to take size kwarg
+            return np.random.rand(*size)
+        return wrapped_rand
+    elif distribution == 'uniform':
         return partial(np.random.uniform, -1, 1)
     return np.random.standard_normal
 
 
 def sketch(A, out=None, output_rank=None, n_oversample=10, n_iter=2,
-           distribution='uniform', axis=0, check_finite=False):
+           distribution=None, axis=0, check_finite=False):
     # converts A to array, raise ValueError if A has inf or nan
     A = np.asarray_chkfinite(A) if check_finite else np.asarray(A)
 

@@ -104,8 +104,8 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform'):
 
     #Return
     if permute:
-        _, r ,_ = sparse.find(P)
-        _, c ,_ = sparse.find(C)
+        _, r, _ = sparse.find(P)
+        _, c, _ = sparse.find(C)
         return L_tilde.dot(conjugate_transpose(U))[r,:], conjugate_transpose(L)[:,c]
 
     return P, L_tilde.dot(conjugate_transpose(U)), conjugate_transpose(L), conjugate_transpose(C)
