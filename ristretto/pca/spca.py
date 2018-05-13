@@ -65,7 +65,7 @@ def spca(X, n_components=None, alpha=0.1, beta=0.01,
     Notes
     -----
     Variable Projection for SPCA solves the following optimization problem:
-    minimize 1/2⋅‖X - X⋅B⋅Aᵀ‖² + α⋅‖B‖₁ + 1/2⋅β‖B‖²
+    minimize :math:`1/2 \| X - X B A^T \|^2 + \alpha \|B\|_1 + 1/2 \beta \|B\|^2`
     """
     # Shape of input matrix
     m, n = X.shape
@@ -198,7 +198,7 @@ def rspca(X, n_components, alpha=0.1, beta=0.1,
     Notes
     -----
     Variable Projection for SPCA solves the following optimization problem:
-    minimize 1/2⋅‖X - X⋅B⋅Aᵀ‖² + α⋅‖B‖₁ + 1/2⋅β‖B‖²
+    minimize :math:`1/2 \| X - X B A^T \|^2 + \alpha \|B\|_1 + 1/2 \beta \|B\|^2`
     """
     # Shape of data matrix
     m, n = X.shape
@@ -278,7 +278,7 @@ def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1,
     Notes
     -----
     Variable Projection for SPCA solves the following optimization problem:
-    minimize 1/2⋅‖X - X⋅B⋅Aᵀ - S‖² + α⋅‖B‖₁ + 1/2⋅β‖B‖²  + γ‖S‖₁
+    minimize :math:`1/2 \| X - X B A^T \|^2 + \alpha \|B\|_1 + 1/2 \beta \|B\|^2`
     """
     # Shape of input matrix
     m, n = X.shape
