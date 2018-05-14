@@ -5,15 +5,44 @@ Utility Functions.
 #          Joseph Knox
 # License: GNU General Public License v3.0
 from functools import partial
+import numbers
 
 import numpy as np
+import scipy.sparse as sp
 
 
-def get_sdist_func(sdist):
-    """wrapper for sampling distributions"""
-    if sdist == 'uniform':
-        return partial(np.random.uniform, -1, 1)
-    return np.random.standard_normal
+def check_non_negative(X, whom):
+    """Check if there is any negative value in an array.
+    Parameters
+    ----------
+    X : array-like or sparse matrix
+    Input data.
+    whom : string
+    Who passed X to this function.
+    """
+    X = X.data if sp.issparse(X) else X
+    if (X < 0).any():
+        raise ValueError("Negative values in data passed to %s" % whom)
+
+
+def check_random_state(seed):
+    """Turn seed into a np.random.RandomState instance
+    Parameters
+    ----------
+    seed : None | int | instance of RandomState
+    If seed is None, return the RandomState singleton used by np.random.
+    If seed is an int, return a new RandomState instance seeded with seed.
+    If seed is already a RandomState instance, return it.
+    Otherwise raise ValueError.
+    """
+    if seed is None or seed is np.random:
+        return np.random.mtrand._rand
+    if isinstance(seed, (numbers.Integral, np.integer)):
+        return np.random.RandomState(seed)
+    if isinstance(seed, np.random.RandomState):
+        return seed
+    raise ValueError('%r cannot be used to seed a numpy.random.RandomState'
+    ' instance' % seed)
 
 
 def conjugate_transpose(A):

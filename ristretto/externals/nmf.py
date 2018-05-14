@@ -13,7 +13,7 @@ from math import sqrt
 import numpy as np
 from scipy import linalg
 
-from .utils import check_random_state, check_non_negative
+from ..utils import check_random_state, check_non_negative
 from ..svd import rsvd
 
 

@@ -17,13 +17,15 @@ from scipy import linalg
 from scipy import sparse
 
 from .qb import rqb, rqb_single
-from .utils import conjugate_transpose
+from .utils import check_random_state, conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 _VALID_SDISTS = ('gaussian', 'spixel', 'sparse')
 
 
-def _sparse_sample(A, k, p, sdist, formatS, check_finite=False):
+def _sparse_sample(A, k, p, sdist, formatS, check_finite=False, random_state=None):
+    random_state = check_random_state(random_state)
+
     # converts A to array, raise ValueError if A has inf or nan
     A = np.asarray_chkfinite(A) if check_finite else np.asarray(A)
     m, n = A.shape
@@ -41,28 +43,28 @@ def _sparse_sample(A, k, p, sdist, formatS, check_finite=False):
 
     # Generate random measurement matrix and compress input matrix
     if sdist=='gaussian':
-        C = np.random.standard_normal(size=(k+p, m)).astype(A.dtype)
+        C = random_state.standard_normal(size=(k+p, m)).astype(A.dtype)
 
         if A.dtype == np.complexfloating:
-            C += 1j * np.random.standard_normal(size=(k+p , m)).astype(real_type)
+            C += 1j * random_state.standard_normal(size=(k+p , m)).astype(real_type)
         Y = C.dot(A)
 
     elif sdist=='spixel':
-        C = np.random.sample(m, k+p)
+        C = random_state.sample(m, k+p)
         Y = A[C, :]
 
     else:
         # sdist == 'sparse'
         density = m / np.log(m)
         C = sparse.rand(k+p, m, density=density**-1, format=formatS,
-                        dtype=real_type, random_state=None)
+                        dtype=real_type, random_state=random_state)
         C.data = np.array(np.where(C.data >= 0.5, 1, -1), dtype=A.dtype)
         Y = C.dot(A)
 
     return Y
 
 
-def csvd(A, k=None, p=10, sdist='sparse', formatS='csr'):
+def csvd(A, k=None, p=10, sdist='sparse', formatS='csr', random_state=None):
     """Compressed Singular Value Decomposition.
 
     Row compressed algorithm for computing the approximate low-rank singular value
@@ -90,6 +92,11 @@ def csvd(A, k=None, p=10, sdist='sparse', formatS='csr'):
     fortmatS : str `{csr, coo}`
         Defines the format of the sparse measurement matrix.
 
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
+
 
     Returns
     -------
@@ -111,7 +118,8 @@ def csvd(A, k=None, p=10, sdist='sparse', formatS='csr'):
     are computational efficient if the leading dimension is m>5000.
     """
     # get sparse sketch of A
-    Y = _sparse_sample(A, k, p, sdist, formatS, check_finite=True)
+    Y = _sparse_sample(A, k, p, sdist, formatS, check_finite=True,
+                       random_state=random_state)
 
     # Compute singular value decomposition
     _ , s , Vh = linalg.svd(Y, full_matrices=False, overwrite_a=True, check_finite=False)
@@ -128,7 +136,7 @@ def csvd(A, k=None, p=10, sdist='sparse', formatS='csr'):
     return U, s, Q.dot(Vh)
 
 
-def csvd2(A, k=None, p=10, sdist='sparse', formatS='csr'):
+def csvd2(A, k=None, p=10, sdist='sparse', formatS='csr', random_state=None):
     """Compressed Singular Value Decomposition.
 
     Row compressed algorithm for computing the approximate low-rank singular value
@@ -156,6 +164,12 @@ def csvd2(A, k=None, p=10, sdist='sparse', formatS='csr'):
     fortmatS : str `{csr, coo}`
         Defines the format of the sparse measurement matrix.
 
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
+
+
     Returns
     -------
     U:  array_like
@@ -176,7 +190,8 @@ def csvd2(A, k=None, p=10, sdist='sparse', formatS='csr'):
     are computational efficient if the leading dimension is m>5000.
     """
     # get sparse sketch of A
-    Y = _sparse_sample(A, k, p, sdist, formatS, check_finite=True)
+    Y = _sparse_sample(A, k, p, sdist, formatS, check_finite=True,
+                       random_state=random_state)
 
     # Compute singular value decomposition
     B = Y.dot(conjugate_transpose(Y))
@@ -210,7 +225,7 @@ def csvd2(A, k=None, p=10, sdist='sparse', formatS='csr'):
     return U, s, Vhstar.dot(conjugate_transpose(V))
 
 
-def csvd_double(A, k=None, p=10, formatS='csr'):
+def csvd_double(A, k=None, p=10, formatS='csr', random_state=None):
     """Compressed Singular Value Decomposition.
 
     Row compressed algorithm for computing the approximate low-rank singular value
@@ -235,6 +250,12 @@ def csvd_double(A, k=None, p=10, formatS='csr'):
     fortmatS : str `{csr, coo}`
         Defines the format of the sparse measurement matrix.
 
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
+
+
     Returns
     -------
     U:  array_like
@@ -246,6 +267,8 @@ def csvd_double(A, k=None, p=10, formatS='csr'):
     Vh : array_like
         Left singular values, array of shape `(k, n)`.
     """
+    random_state = check_random_state(random_state)
+
     # converts A to array, raise ValueError if A has inf or nan
     A = np.asarray_chkfinite(A)
     m, n = A.shape
@@ -256,8 +279,8 @@ def csvd_double(A, k=None, p=10, formatS='csr'):
 
     # Generate random measurement matrix and compress input matrix
     # Generate a random test matrix Omega
-    Omega = np.random.sample(n, k+p)
-    Psi = np.random.sample(m, k+p)
+    Omega = random_state.sample(n, k+p)
+    Psi = random_state.sample(m, k+p)
 
     L, _ = linalg.qr(A[:, Omega], mode='economic', check_finite=False, overwrite_a=False)
     R, _ = linalg.qr(A[Psi, :].T, mode='economic', check_finite=False, overwrite_a=False)
@@ -273,7 +296,7 @@ def csvd_double(A, k=None, p=10, formatS='csr'):
     return L.dot(U), s, Vh.dot(R.T)
 
 
-def rsvd(A, k=None, p=10, q=1, sdist='uniform'):
+def rsvd(A, k=None, p=10, q=1, sdist='uniform', random_state=None):
     """Randomized Singular Value Decomposition.
 
     Randomized algorithm for computing the approximate low-rank singular value
@@ -308,6 +331,11 @@ def rsvd(A, k=None, p=10, q=1, sdist='uniform'):
         'uniform' : Random test matrix with uniform distributed elements.
 
         'normal' : Random test matrix with normal distributed elements.
+
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
 
 
     Returns
@@ -346,7 +374,7 @@ def rsvd(A, k=None, p=10, q=1, sdist='uniform'):
         m , n = A.shape
         flipped = True
 
-    Q, B = rqb(A, k=k, p=p, q=q, sdist=sdist)
+    Q, B = rqb(A, k=k, p=p, q=q, sdist=sdist, random_state=random_state)
 
     # Compute SVD
     U, s, Vt = linalg.svd(B, compute_uv=True, full_matrices=False,
@@ -361,7 +389,8 @@ def rsvd(A, k=None, p=10, q=1, sdist='uniform'):
 
     return U[:, :k], s[:k], Vt[:k, :]
 
-def rsvd_single(A, k=None, p=10, l=None, sdist='uniform'):
+
+def rsvd_single(A, k=None, p=10, l=None, sdist='uniform', random_state=None):
     """Randomized Singular Value Decomposition Single-View.
 
     Randomized algorithm for computing the approximate low-rank singular value
@@ -395,6 +424,11 @@ def rsvd_single(A, k=None, p=10, l=None, sdist='uniform'):
 
         'orthogonal' : Orthogonalized random test matrices with uniform distributed elements.
 
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
+
 
     Returns
     -------
@@ -425,7 +459,7 @@ def rsvd_single(A, k=None, p=10, l=None, sdist='uniform'):
         flipped = True
 
     # compute QB decomposition
-    Q, B = rqb_single(A, k=k, p=p, l=l, sdist=sdist)
+    Q, B = rqb_single(A, k=k, p=p, l=l, sdist=sdist, random_state=random_state)
 
     # Singular Value Decomposition
     # NOTE: B = U" * S * Vt

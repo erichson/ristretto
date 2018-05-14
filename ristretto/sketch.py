@@ -10,12 +10,13 @@ import warnings
 import numpy as np
 from scipy import linalg
 
-from .utils import conjugate_transpose
+from .utils import check_random_state, conjugate_transpose
 
 _VALID_DISTRIBUTIONS = ('uniform', 'normal')
 _VALID_SINGLE_DISTRIBUTIONS = ('uniform', 'normal', 'orthogonal')
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 _QR_KWARGS = dict(mode='economic', check_finite=False, overwrite_a=True)
+
 
 def _output_rank_check(A, output_rank):
     n, m = A.shape
@@ -29,14 +30,17 @@ def _output_rank_check(A, output_rank):
         rank = min(n, m)
     return rank
 
-def _get_distribution_func(distribution):
+
+def _get_distribution_func(distribution, random_state):
     if distribution == 'uniform':
-        return partial(np.random.uniform, -1, 1)
-    return np.random.standard_normal
+        return partial(random_state.uniform, -1, 1)
+    return random_state.standard_normal
 
 
 def sketch(A, out=None, output_rank=None, n_oversample=10, n_iter=2,
-           distribution='uniform', axis=0, check_finite=False):
+           distribution='uniform', axis=0, check_finite=False, random_state=None):
+    random_state = check_random_state(random_state)
+
     # converts A to array, raise ValueError if A has inf or nan
     A = np.asarray_chkfinite(A) if check_finite else np.asarray(A)
 
@@ -58,7 +62,7 @@ def sketch(A, out=None, output_rank=None, n_oversample=10, n_iter=2,
     size = (n_oversample, A.shape[0]) if axis == 0 else (A.shape[1], n_oversample)
 
     # get numpy random func
-    dist_func = _get_distribution_func(distribution)
+    dist_func = _get_distribution_func(distribution, random_state)
 
     #Generate a random test matrix Omega
     Omega = dist_func(size=size).astype(A.dtype)
@@ -92,7 +96,9 @@ def sketch(A, out=None, output_rank=None, n_oversample=10, n_iter=2,
 
 def single_pass_sketch(A, output_rank=None, row_oversample=None,
                        column_oversample=10, distribution='uniform',
-                       check_finite=False):
+                       check_finite=False, random_state=None):
+    random_state = check_random_state(random_state)
+
     # converts A to array, raise ValueError if A has inf or nan
     A = np.asarray_chkfinite(A) if check_finite else np.asarray(A)
 
@@ -113,7 +119,7 @@ def single_pass_sketch(A, output_rank=None, row_oversample=None,
     column_oversample += rank
 
     # get numpy random func
-    dist_func = _get_distribution_func(distribution)
+    dist_func = _get_distribution_func(distribution, random_state)
 
     #Generate a random test matrix Omega
     Omega = dist_func(size=(A.shape[1], column_oversample)).astype(A.dtype)

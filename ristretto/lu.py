@@ -15,7 +15,7 @@ from .sketch import sketch
 from .utils import conjugate_transpose
 
 
-def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform'):
+def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform', random_state=None):
     """Randomized LU Decomposition.
 
     Randomized algorithm for computing the approximate low-rank LU
@@ -51,6 +51,10 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform'):
 
         'normal' : Random test matrix with normal distributed elements.
 
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
 
     Returns
     -------
@@ -82,7 +86,7 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform'):
     """
     # get random sketch
     S = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
-               axis=1, check_finite=True)
+               axis=1, check_finite=True, random_state=random_state)
 
     # Compute pivoted LU decompostion of the orthonormal basis matrix Q.
     # Q = P * L * U

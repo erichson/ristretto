@@ -156,8 +156,8 @@ def dmd(A, dt=1, k=None, modes='exact', return_amplitudes=False,
     return result
 
 
-def rdmd(A, dt=1, k=None, p=10, q=2, sdist='uniform', single_pass=False,
-         return_amplitudes=False, return_vandermonde=False, order=True):
+def rdmd(A, dt=1, k=None, p=10, q=2, sdist='uniform', return_amplitudes=False,
+        return_vandermonde=False, order=True, random_state=None):
     """
     Randomized Dynamic Mode Decomposition.
 
@@ -197,6 +197,10 @@ def rdmd(A, dt=1, k=None, p=10, q=2, sdist='uniform', single_pass=False,
     order :  bool `{True, False}`
         True: return modes sorted.
 
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
 
     Returns
     -------
@@ -213,7 +217,7 @@ def rdmd(A, dt=1, k=None, p=10, q=2, sdist='uniform', single_pass=False,
         Time scaled eigenvalues: `ln(l)/dt`.
     """
     # Compute QB decomposition
-    Q, B = rqb(A, k=k, p=p, q=q, sdist=sdist)
+    Q, B = rqb(A, k=k, p=p, q=q, sdist=sdist, random_state=random_state)
 
     # only difference is we need to premultiply F from dmd
     # vandermonde is basically already computed
@@ -238,7 +242,8 @@ def rdmd(A, dt=1, k=None, p=10, q=2, sdist='uniform', single_pass=False,
 
 
 def rdmd_single(A, dt=1, k=None, p=10, l=None, sdist='uniform',
-                return_amplitudes=False, return_vandermonde=False, order=True):
+                return_amplitudes=False, return_vandermonde=False, order=True,
+                random_state=None):
     """Randomized Dynamic Mode Decomposition Single-View.
 
     Dynamic Mode Decomposition (DMD) is a data processing algorithm which
@@ -305,7 +310,7 @@ def rdmd_single(A, dt=1, k=None, p=10, l=None, sdist='uniform',
     (available at `arXiv <https://arxiv.org/abs/1609.00048>`_).
     """
     # compute QB decomposition
-    Q, B = rqb_single(A, k=k, p=p, l=l, sdist=sdist)
+    Q, B = rqb_single(A, k=k, p=p, l=l, sdist=sdist, random_state=random_state)
 
     # only difference is we need to premultiply F from dmd
     # vandermonde is basically already computed

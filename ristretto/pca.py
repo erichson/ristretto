@@ -13,8 +13,8 @@ from scipy import linalg
 from .qb import rqb
 
 
-def spca(X, n_components=None, alpha=0.1, beta=0.01,
-         max_iter=500, tol=1e-5, verbose=True):
+def spca(X, n_components=None, alpha=0.1, beta=0.01, max_iter=500, tol=1e-5,
+        verbose=True):
     """Sparse Principal Component Analysis (SPCA).
 
     Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
@@ -46,7 +46,6 @@ def spca(X, n_components=None, alpha=0.1, beta=0.01,
 
     verbose : bool ``{'True', 'False'}``, optional (default ``verbose = True``).
         Display progress.
-
 
     Returns
     -------
@@ -138,87 +137,8 @@ def spca(X, n_components=None, alpha=0.1, beta=0.01,
     return(B, A, eigvals, obj)
 
 
-
-def rspca(X, n_components, alpha=0.1, beta=0.1,
-         max_iter=1000, tol=1e-5, verbose=0, p=20, q=2):
-    """Randomized Sparse Principal Component Analysis (rSPCA).
-
-    Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
-    computes a set of sparse components that can optimally reconstruct the
-    input data.  The amount of sparseness is controllable by the coefficient
-    of the L1 penalty, given by the parameter alpha. In addition, some ridge
-    shrinkage can be applied in order to improve conditioning.
-
-    This algorithm uses randomized methods for linear algebra to accelerate
-    the computations.
-
-    Parameters
-    ----------
-    A : array_like, shape `(m, n)`.
-        Real nonnegative input matrix.
-
-    n_components : integer, `n_components << min{m,n}`.
-        Target rank, i.e., number of sparse components to be computed.
-
-    alpha : float, (default ``alpha = 0.1``).
-        Sparsity controlling parameter. Higher values lead to sparser components.
-
-    beta : float, (default ``beta = 0.1``).
-        Amount of ridge shrinkage to apply in order to improve conditionin.
-
-    max_iter : integer, (default ``max_iter = 500``).
-        Maximum number of iterations to perform before exiting.
-
-    tol : float, (default ``tol = 1e-5``).
-        Stopping tolerance for reconstruction error.
-
-    verbose : bool ``{'True', 'False'}``, optional (default ``verbose = True``).
-        Display progress.
-
-    p : integer, (default: `p=20`).
-        Parameter to control oversampling.
-
-    q : integer, (default: `q=2`).
-        Parameter to control number of power (subspace) iterations.
-
-    Returns
-    -------
-    B:  array_like, `(n, n_components)`.
-        Sparse components extracted from the data.
-
-    A : array_like, `(n, n_components)`.
-        Orthogonal components extracted from the data.
-
-    eigvals : array_like, `(n_components)`.
-        Eigenvalues correspnding to the extracted components.
-
-    obj : array_like, `(n_iter)`.
-        Objective value at the i-th iteration.
-
-    Notes
-    -----
-    Variable Projection for SPCA solves the following optimization problem:
-    minimize :math:`1/2 \| X - X B A^T \|^2 + \alpha \|B\|_1 + 1/2 \beta \|B\|^2`
-    """
-    # Shape of data matrix
-    m, n = X.shape
-
-    # Compute QB decomposition
-    Q, Xcompressed = rqb(X, k=n_components, p=p, q=q )
-
-    # Compute Sparse PCA
-    B, A, eigvals, obj = spca(Xcompressed, n_components=n_components,
-                              alpha=alpha, beta=beta,
-                              max_iter=max_iter, tol=tol, verbose=verbose)
-
-    # rescale eigen values
-    eigvals = eigvals * (n_components+p - 1) / (m-1)
-
-    return(B, A, eigvals, obj)
-
-
-def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1,
-            max_iter=1000, tol=1e-5, verbose=True):
+def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
+            tol=1e-5, verbose=True):
     """Robust Sparse Principal Component Analysis (Robust SPCA).
 
     Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
@@ -361,3 +281,86 @@ def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1,
 
     eigvals = Dtilde / (m-1)
     return B, A, S, eigvals, obj
+
+
+def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, tol=1e-5,
+          verbose=0, p=20, q=2, random_state=None):
+    """Randomized Sparse Principal Component Analysis (rSPCA).
+
+    Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
+    computes a set of sparse components that can optimally reconstruct the
+    input data.  The amount of sparseness is controllable by the coefficient
+    of the L1 penalty, given by the parameter alpha. In addition, some ridge
+    shrinkage can be applied in order to improve conditioning.
+
+    This algorithm uses randomized methods for linear algebra to accelerate
+    the computations.
+
+    Parameters
+    ----------
+    A : array_like, shape `(m, n)`.
+        Real nonnegative input matrix.
+
+    n_components : integer, `n_components << min{m,n}`.
+        Target rank, i.e., number of sparse components to be computed.
+
+    alpha : float, (default ``alpha = 0.1``).
+        Sparsity controlling parameter. Higher values lead to sparser components.
+
+    beta : float, (default ``beta = 0.1``).
+        Amount of ridge shrinkage to apply in order to improve conditionin.
+
+    max_iter : integer, (default ``max_iter = 500``).
+        Maximum number of iterations to perform before exiting.
+
+    tol : float, (default ``tol = 1e-5``).
+        Stopping tolerance for reconstruction error.
+
+    verbose : bool ``{'True', 'False'}``, optional (default ``verbose = True``).
+        Display progress.
+
+    p : integer, (default: `p=20`).
+        Parameter to control oversampling.
+
+    q : integer, (default: `q=2`).
+        Parameter to control number of power (subspace) iterations.
+
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
+
+    Returns
+    -------
+    B:  array_like, `(n, n_components)`.
+        Sparse components extracted from the data.
+
+    A : array_like, `(n, n_components)`.
+        Orthogonal components extracted from the data.
+
+    eigvals : array_like, `(n_components)`.
+        Eigenvalues correspnding to the extracted components.
+
+    obj : array_like, `(n_iter)`.
+        Objective value at the i-th iteration.
+
+    Notes
+    -----
+    Variable Projection for SPCA solves the following optimization problem:
+    minimize :math:`1/2 \| X - X B A^T \|^2 + \alpha \|B\|_1 + 1/2 \beta \|B\|^2`
+    """
+    # Shape of data matrix
+    m, n = X.shape
+
+    # Compute QB decomposition
+    Q, Xcompressed = rqb(X, k=n_components, p=p, q=q, random_state=random_state)
+
+    # Compute Sparse PCA
+    B, A, eigvals, obj = spca(Xcompressed, n_components=n_components,
+                              alpha=alpha, beta=beta,
+                              max_iter=max_iter, tol=tol, verbose=verbose)
+
+    # rescale eigen values
+    eigvals = eigvals * (n_components+p - 1) / (m-1)
+
+    return(B, A, eigvals, obj)

@@ -12,7 +12,7 @@ from .sketch import sketch, single_pass_sketch
 from .utils import conjugate_transpose
 
 
-def rqb(A, k=None, p=10, q=1, sdist='normal'):
+def rqb(A, k=None, p=10, q=1, sdist='normal', random_state=None):
     """Randomized QB Decomposition.
 
     Randomized algorithm for computing the approximate low-rank QB
@@ -42,6 +42,11 @@ def rqb(A, k=None, p=10, q=1, sdist='normal'):
         'uniform' : Random test matrix with uniform distributed elements.
 
         'normal' : Random test matrix with normal distributed elements.
+
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
 
 
     Returns
@@ -69,7 +74,7 @@ def rqb(A, k=None, p=10, q=1, sdist='normal'):
     """
     # get random sketch
     Q = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
-               axis=1, check_finite=True)
+               axis=1, check_finite=True, random_state=random_state)
 
     #Project the data matrix a into a lower dimensional subspace
     B = conjugate_transpose(Q).dot(A)
@@ -77,7 +82,7 @@ def rqb(A, k=None, p=10, q=1, sdist='normal'):
     return Q, B
 
 
-def rqb_single(A, k=None, p=10, l=None, q=1, sdist='normal'):
+def rqb_single(A, k=None, p=10, l=None, q=1, sdist='normal', random_state=None):
     """Randomized QB Decomposition.
 
     Randomized algorithm for computing the approximate low-rank QB
@@ -108,6 +113,10 @@ def rqb_single(A, k=None, p=10, l=None, q=1, sdist='normal'):
 
         'normal' : Random test matrix with normal distributed elements.
 
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
 
     Returns
     -------
@@ -133,8 +142,9 @@ def rqb_single(A, k=None, p=10, l=None, q=1, sdist='normal'):
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
     # Form a smaller matrix
-    Omega, Psi = single_pass_sketch(A, output_rank=k, column_oversample=p, row_oversample=l,
-                                    distribution=sdist, check_finite=True)
+    Omega, Psi = single_pass_sketch(
+        A, output_rank=k, column_oversample=p, row_oversample=l,
+        distribution=sdist, check_finite=True, random_state=random_state)
 
     #Build sample matrix Y = A * Omega and W = Psi * A
     #Note: Y should approximate the column space and W the row space of A
