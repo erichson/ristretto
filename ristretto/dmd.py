@@ -188,7 +188,7 @@ def rdmd(A, dt=1, k=None, p=10, l=None, q=2, sdist='uniform', single_pass=False,
 
     q : int, optional
         Number of subspace iterations to perform. Only relevant if
-        singel_pass == False
+        single_pass == False
 
     sdist : str `{'uniform', 'normal'}`
         Specify the distribution of the sensing matrix `S`.

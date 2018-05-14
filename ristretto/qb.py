@@ -41,7 +41,8 @@ def rqb(A, k=None, p=10, l=None, q=1, sdist='normal', single_pass=False,
         single_pass == True.
 
     q : integer, default: `q=1`.
-        Parameter to control number of power (subspace) iterations.
+        Parameter to control number of power (subspace) iterations. Only
+        relevant if single_pass == False.
 
     sdist : str `{'uniform', 'normal'}`, default: `sdist='uniform'`.
         'uniform' : Random test matrix with uniform distributed elements.
@@ -93,8 +94,8 @@ def rqb(A, k=None, p=10, l=None, q=1, sdist='normal', single_pass=False,
         del Omega
 
         #Orthogonalize Y using economic QR decomposition: Y=QR
-        Q, _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True )
-        U, T = linalg.qr(Psi.dot(Q), mode='economic', check_finite=False, overwrite_a=False )
+        Q, _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True)
+        U, T = linalg.qr(Psi.dot(Q), mode='economic', check_finite=False, overwrite_a=False)
 
         # Form a smaller matrix
         B = linalg.solve(T, conjugate_transpose(U).dot(W), check_finite=False,

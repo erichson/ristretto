@@ -330,7 +330,8 @@ def rsvd(A, k=None, p=10, l=None, q=1, sdist='uniform', single_pass=False,
         single_pass == True.
 
     q : integer, default: `q=1`.
-        Parameter to control number of power (subspace) iterations.
+        Parameter to control number of power (subspace) iterations. Only
+        relevant if single_pass == False.
 
     sdist : str `{'uniform', 'normal'}`, default: `sdist='uniform'`.
         'uniform' : Random test matrix with uniform distributed elements.
