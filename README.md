@@ -7,11 +7,11 @@ The idea of randomized low-rank matrix approximations is to restrict the high-di
 *************************************************
 
 The Python software library ristretto provides a collection of randomized matrix algorithms which can be used for dimension reduction. Overview of implemented routines:
-* Randomized singular value decomposition: ``from ristretto.mf import rsvd``.
-* Randomized single-view singular value decomposition: ``from ristretto.mf import rsvd_single``.
-* Randomized interpolative decomposition:``from ristretto.mf import rinterp_decomp``.
-* Randomized CUR decomposition: ``from ristretto.mf import rcur``.
-* Randomized LU decompositoin: ``from ristretto.mf import rlu``.
+* Randomized singular value decomposition: ``from ristretto.svd import rsvd``.
+* Randomized single-view singular value decomposition: ``from ristretto.svd import rsvd_single``.
+* Randomized interpolative decomposition:``from ristretto.interp_decomp import rinterp_decomp``.
+* Randomized CUR decomposition: ``from ristretto.cur import rcur``.
+* Randomized LU decompositoin: ``from ristretto.lu import rlu``.
 * Randomized nonnegative matrix factorization: ``from ristretto.nmf import rnmf_fhals``.
 
 # Get started
