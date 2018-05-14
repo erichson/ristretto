@@ -1,12 +1,16 @@
 import numpy as np
 
-from ristretto.mf import interp_decomp, rinterp_decomp, rinterp_decomp_qb
-
+from ristretto.interp_decomp import interp_decomp
+from ristretto.interp_decomp import rinterp_decomp
+from ristretto.interp_decomp import rinterp_decomp_qb
 
 atol_float32 = 1e-4
 atol_float64 = 1e-8
 
 
+# =============================================================================
+# interp_decomp function
+# =============================================================================
 def test_id_col():
     m, k = 100, 10
     A = np.array(np.random.randn(m, k), np.float64)
@@ -40,6 +44,9 @@ def test_id_row():
     assert relative_error < 1e-4
 
 
+# =============================================================================
+# rinterp_decomp function
+# =============================================================================
 def test_rid_col():
     m, k = 100, 10
     A = np.array(np.random.randn(m, k), np.float64)
@@ -74,6 +81,9 @@ def test_rid_row():
     assert relative_error < 1e-4
 
 
+# =============================================================================
+# rinterp_decomp_qb function
+# =============================================================================
 def test_ridqb_col():
     m, k = 100, 10
     A = np.array(np.random.randn(m, k), np.float64)

@@ -8,8 +8,8 @@ Randomized QB Decomposition
 import numpy as np
 from scipy import linalg
 
-from ..sketch import sketch, single_pass_sketch
-from ..utils import conjugate_transpose
+from .sketch import sketch, single_pass_sketch
+from .utils import conjugate_transpose
 
 
 def rqb(A, k=None, p=10, q=1, sdist='normal'):
