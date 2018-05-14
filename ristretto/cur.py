@@ -77,7 +77,7 @@ def cur(A, k=None, index_set=False):
     return C, U, R
 
 
-def rcur(A, k=None, p=10, q=1, index_set=False):
+def rcur(A, k=None, p=10, q=1, index_set=False, random_state=None):
     """Randomized CUR decomposition.
 
     Randomized algorithm for computing the approximate low-rank CUR
@@ -106,6 +106,11 @@ def rcur(A, k=None, p=10, q=1, index_set=False):
     index_set: str `{'True', 'False'}`, default: `index_set='False'`.
         'True' : Return column/row index set instead of `C` and `R`.
 
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
+
 
     Returns
     -------
@@ -128,13 +133,15 @@ def rcur(A, k=None, p=10, q=1, index_set=False):
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
     # Compute column ID
-    J, V = rinterp_decomp(A, k=k, p=p, q=q, mode='column', index_set=True)
+    J, V = rinterp_decomp(A, k=k, p=p, q=q, mode='column', index_set=True,
+                          random_state=random_state)
 
     # Select column subset
     C = A[:, J]
 
     # Compute row ID of C
-    Z, I = rinterp_decomp(C, k=k, p=p, q=q,  mode='row', index_set=True)
+    Z, I = rinterp_decomp(C, k=k, p=p, q=q,  mode='row', index_set=True,
+                          random_state=random_state)
 
     # Select row subset
     R = A[I, :]

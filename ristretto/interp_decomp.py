@@ -11,7 +11,8 @@ import numpy as np
 from scipy import linalg
 
 from .qb import rqb
-from .utils import conjugate_transpose, get_sdist_func
+from .sketch import _get_distribution_func
+from .utils import check_random_state, conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 _VALID_SDISTS = ('uniform', 'normal')
@@ -93,7 +94,8 @@ def interp_decomp(A, k=None, mode='column', index_set=False):
         raise ValueError("Target rank k must be >= 1 or < min(m, n), not %d" % k)
 
     #Pivoted QR decomposition
-    Q, R, P = linalg.qr(A, mode='economic', overwrite_a=False, pivoting=True, check_finite=False)
+    Q, R, P = linalg.qr(A, mode='economic', overwrite_a=False, pivoting=True,
+                        check_finite=False)
 
     # Select column subset
     C = A[:, P[:k]]
@@ -115,7 +117,8 @@ def interp_decomp(A, k=None, mode='column', index_set=False):
     return conjugate_transpose(V), conjugate_transpose(C)
 
 
-def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal', index_set=False):
+def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal',
+                   index_set=False, random_state=None):
     """Randomized interpolative decomposition (rID).
 
     Algorithm for computing the approximate low-rank ID
@@ -160,6 +163,11 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal', index_se
     index_set: str `{'True', 'False'}`, default: `index_set='False'`.
         'True' : Return column/row index set instead of `C` or `R`.
 
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
+
     Returns
     -------
     If `mode='column'`:
@@ -184,6 +192,18 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal', index_se
     and GPU architectures" (2015).
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
+    random_state=check_random_state(random_state)
+
+    # converts A to array, raise ValueError if A has inf or nan
+    A = np.asarray_chkfinite(A)
+
+    if mode=='row':
+        A = conjugate_transpose(A)
+
+    if A.dtype not in _VALID_DTYPES:
+        raise ValueError('A.dtype must be one of %s, not %s'
+                         % (' '.join(_VALID_DTYPES), A.dtype))
+
     if mode not in _VALID_MODES:
         raise ValueError('mode must be one of %s, not %s'
                          % (' '.join(_VALID_MODES), mode))
@@ -192,17 +212,7 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal', index_se
         raise ValueError('sdists must be one of %s, not %s'
                          % (' '.join(_VALID_SDISTS), sdist))
 
-    # converts A to array, raise ValueError if A has inf or nan
-    A = np.asarray_chkfinite(A)
-    if mode=='row':
-        A = conjugate_transpose(A)
-
     m, n = A.shape
-
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
     if k is None:
         # default
         k = min(m, n)
@@ -211,7 +221,7 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal', index_se
         raise ValueError("Target rank k must be >= 1 or < min(m, n), not %d" % k)
 
     # distribution to draw random samples
-    sdist_func = get_sdist_func(sdist)
+    sdist_func = _get_distribution_func(sdist, random_state)
 
     #Generate a random test matrix Omega
     Omega = sdist_func(size=(k+p, m)).astype(A.dtype)
@@ -250,7 +260,8 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal', index_se
     return conjugate_transpose(V), conjugate_transpose(A[:,J])
 
 
-def rinterp_decomp_qb(A, k=None, mode='column', p=10, q=1, sdist='normal', index_set=False):
+def rinterp_decomp_qb(A, k=None, mode='column', p=10, q=1, sdist='normal',
+                      index_set=False, random_state=None):
     """Randomized interpolative decomposition (rID).
 
     Algorithm for computing the approximate low-rank ID
@@ -295,6 +306,11 @@ def rinterp_decomp_qb(A, k=None, mode='column', p=10, q=1, sdist='normal', index
     index_set: str `{'True', 'False'}`, default: `index_set='False'`.
         'True' : Return column/row index set.
 
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
+
 
     Returns
     -------
@@ -335,7 +351,7 @@ def rinterp_decomp_qb(A, k=None, mode='column', p=10, q=1, sdist='normal', index
         A = conjugate_transpose(A)
 
     # compute QB factorization
-    Q, B = rqb(A, k=k, p=p, q=q, sdist=sdist)
+    Q, B = rqb(A, k=k, p=p, q=q, sdist=sdist, random_state=random_state)
 
     # Deterministic ID
     J, V = interp_decomp(B, k=k, mode='column', index_set=True)

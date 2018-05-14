@@ -11,12 +11,12 @@ import numpy as np
 from scipy import linalg
 
 from .sketch import sketch
-from .utils import conjugate_transpose
+from .utils import check_random_state, conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 
 
-def reigh(A, k, p=20, q=2, sdist='normal'):
+def reigh(A, k, p=20, q=2, sdist='normal', random_state=None):
     """Randomized eigendecompostion.
 
 
@@ -39,6 +39,11 @@ def reigh(A, k, p=20, q=2, sdist='normal'):
 
         'normal' : Random test matrix with normal distributed elements.
 
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
+
 
     Returns
     -------
@@ -60,7 +65,7 @@ def reigh(A, k, p=20, q=2, sdist='normal'):
     """
     # get random sketch
     Q = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
-               axis=1, check_finite=True)
+               axis=1, check_finite=True, random_state=random_state)
 
     #Project the data matrix a into a lower dimensional subspace
     B = A.dot(Q)
@@ -77,7 +82,7 @@ def reigh(A, k, p=20, q=2, sdist='normal'):
     return w[:k], Q.dot(v)[:,:k]
 
 
-def reigh_nystroem(A, k, p=10, q=2, sdist='normal'):
+def reigh_nystroem(A, k, p=10, q=2, sdist='normal', random_state=None):
     """Randomized eigendecompostion using the Nystroem method.
 
 
@@ -120,7 +125,7 @@ def reigh_nystroem(A, k, p=10, q=2, sdist='normal'):
     """
     # get random sketch
     S = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
-               axis=1, check_finite=True)
+               axis=1, check_finite=True, random_state=random_state)
 
     #Project the data matrix a into a lower dimensional subspace
     B1 = A.dot(S)
@@ -154,7 +159,7 @@ def reigh_nystroem(A, k, p=10, q=2, sdist='normal'):
     return w[:k]**2, v[:,:k]
 
 
-def reigh_nystroem_col(A, k, p=0):
+def reigh_nystroem_col(A, k, p=0, random_state=None):
     """Randomized eigendecompostion using the Nystroem method.
 
 
@@ -169,6 +174,10 @@ def reigh_nystroem_col(A, k, p=0):
     p : integer, default: `p=0`.
         Parameter to control oversampling.
 
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
 
     Returns
     -------
@@ -188,6 +197,8 @@ def reigh_nystroem_col(A, k, p=0):
     decompositions" (2009).
     (available at `arXiv <http://arxiv.org/abs/0909.4061>`_).
     """
+    random_state = check_random_state(random_state)
+
     # converts A to array, raise ValueError if A has inf or nan
     A = np.asarray_chkfinite(A)
     m, n = A.shape
@@ -204,7 +215,7 @@ def reigh_nystroem_col(A, k, p=0):
         raise ValueError("Target rank k must be >= 1 or < min(m, n), not %d" % k)
 
     #Generate a random test matrix Omega
-    idx = np.sort(np.random.choice(n, size=(k+p), replace=False))
+    idx = np.sort(random_state.choice(n, size=(k+p), replace=False))
 
     #Project the data matrix a into a lower dimensional subspace
     B1 = A[:,idx]
