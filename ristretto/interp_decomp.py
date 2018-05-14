@@ -10,8 +10,8 @@ from __future__ import division
 import numpy as np
 from scipy import linalg
 
-from .rqb import rqb
-from ..utils import conjugate_transpose, get_sdist_func
+from .qb import rqb
+from .utils import conjugate_transpose, get_sdist_func
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 _VALID_SDISTS = ('uniform', 'normal')

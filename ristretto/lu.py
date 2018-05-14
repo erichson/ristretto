@@ -11,8 +11,8 @@ import numpy as np
 from scipy import linalg
 from scipy import sparse
 
-from ..sketch import sketch
-from ..utils import conjugate_transpose
+from .sketch import sketch
+from .utils import conjugate_transpose
 
 
 def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform'):

@@ -1,12 +1,14 @@
 import numpy as np
 
-from ristretto.mf import rlu
-
+from ristretto.lu import rlu
 
 atol_float32 = 1e-4
 atol_float64 = 1e-8
 
 
+# =============================================================================
+# rlu function
+# =============================================================================
 def test_rlu_float64():
     m, k = 100, 10
     A = np.array(np.random.randn(m, k), np.float64)

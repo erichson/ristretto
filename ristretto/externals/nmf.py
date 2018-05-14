@@ -14,7 +14,7 @@ import numpy as np
 from scipy import linalg
 
 from .utils import check_random_state, check_non_negative
-from ..mf.rsvd import rsvd
+from ..svd import rsvd
 
 
 def norm(x):
