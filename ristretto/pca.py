@@ -15,7 +15,7 @@ from .qb import rqb
 
 def spca(X, n_components=None, alpha=0.1, beta=0.01, max_iter=500, tol=1e-5,
         verbose=True):
-    """Sparse Principal Component Analysis (SPCA).
+    r"""Sparse Principal Component Analysis (SPCA).
 
     Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
     computes a set of sparse components that can optimally reconstruct the
@@ -139,7 +139,7 @@ def spca(X, n_components=None, alpha=0.1, beta=0.01, max_iter=500, tol=1e-5,
 
 def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
             tol=1e-5, verbose=True):
-    """Robust Sparse Principal Component Analysis (Robust SPCA).
+    r"""Robust Sparse Principal Component Analysis (Robust SPCA).
 
     Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
     computes a set of sparse components that can optimally reconstruct the
@@ -285,7 +285,7 @@ def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
 
 def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, tol=1e-5,
           verbose=0, p=20, q=2, random_state=None):
-    """Randomized Sparse Principal Component Analysis (rSPCA).
+    r"""Randomized Sparse Principal Component Analysis (rSPCA).
 
     Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
     computes a set of sparse components that can optimally reconstruct the

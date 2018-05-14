@@ -262,7 +262,7 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal',
 
 def rinterp_decomp_qb(A, k=None, mode='column', p=10, q=1, sdist='normal',
                       index_set=False, random_state=None):
-    """Randomized interpolative decomposition (rID).
+    r"""Randomized interpolative decomposition (rID).
 
     Algorithm for computing the approximate low-rank ID
     decomposition of a rectangular `(m, n)` matrix `A`, with target rank `k << min{m, n}`.

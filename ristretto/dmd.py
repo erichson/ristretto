@@ -10,7 +10,7 @@ from __future__ import division
 import numpy as np
 from scipy import linalg
 
-from .qb import rqb, rqb_single
+from .qb import rqb
 from .utils import conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
@@ -156,10 +156,10 @@ def dmd(A, dt=1, k=None, modes='exact', return_amplitudes=False,
     return result
 
 
-def rdmd(A, dt=1, k=None, p=10, q=2, sdist='uniform', return_amplitudes=False,
-        return_vandermonde=False, order=True, random_state=None):
-    """
-    Randomized Dynamic Mode Decomposition.
+def rdmd(A, dt=1, k=None, p=10, l=None, q=2, sdist='uniform', single_pass=False,
+        return_amplitudes=False, return_vandermonde=False, order=True,
+        random_state=None):
+    """Randomized Dynamic Mode Decomposition.
 
     Dynamic Mode Decomposition (DMD) is a data processing algorithm which
     allows to decompose a matrix `A` in space and time. The matrix `A` is
@@ -167,92 +167,6 @@ def rdmd(A, dt=1, k=None, p=10, q=2, sdist='uniform', return_amplitudes=False,
     The modes are ordered corresponding to the amplitudes stored in the diagonal
     matrix `B`. `V` is a Vandermonde matrix describing the temporal evolution.
 
-
-    Parameters
-    ----------
-    A : array_like
-        Real/complex input matrix  `a` with dimensions `(m, n)`.
-
-    dt : scalar or array_like
-        Factor specifying the time difference between the observations.
-
-    k : int
-        If `k < (n-1)` low-k Dynamic Mode Decomposition is computed.
-
-    p : int, optional
-        Oversampling paramater.
-
-    q : int, optional
-        Number of subspace iterations to perform.
-
-    sdist : str `{'uniform', 'normal'}`
-        Specify the distribution of the sensing matrix `S`.
-
-    return_amplitudes : bool `{True, False}`
-        True: return amplitudes in addition to dynamic modes.
-
-    return_vandermonde : bool `{True, False}`
-        True: return Vandermonde matrix in addition to dynamic modes and amplitudes.
-
-    order :  bool `{True, False}`
-        True: return modes sorted.
-
-    random_state : integer, RandomState instance or None, optional (default ``None``)
-        If integer, random_state is the seed used by the random number generator;
-        If RandomState instance, random_state is the random number generator;
-        If None, the random number generator is the RandomState instance used by np.random.
-
-    Returns
-    -------
-    F : array_like
-        Matrix containing the dynamic modes of shape `(m, n-1)`  or `(m, k)`.
-
-    b : array_like, if `return_amplitudes=True`
-        1-D array containing the amplitudes of length `min(n-1, k)`.
-
-    V : array_like, if `return_vandermonde=True`
-        Vandermonde matrix of shape `(n-1, n-1)`  or `(k, n-1)`.
-
-    omega : array_like
-        Time scaled eigenvalues: `ln(l)/dt`.
-    """
-    # Compute QB decomposition
-    Q, B = rqb(A, k=k, p=p, q=q, sdist=sdist, random_state=random_state)
-
-    # only difference is we need to premultiply F from dmd
-    # vandermonde is basically already computed
-    # TODO: factor out the rest so no code is repeated
-    F, V, omega = dmd(B, dt=dt, k=k, modes='standard',return_amplitudes=False,
-                      return_vandermonde=True, order=order)
-
-    #Compute DMD Modes
-    F = Q.dot(F)
-
-    result = [F]
-    if return_amplitudes:
-        #Compute amplitueds b using least-squares: Fb=x1
-        b = _get_amplitudes(F, A)
-        result.append(b)
-
-    if return_vandermonde:
-        result.append(V)
-
-    result.append(omega)
-    return result
-
-
-def rdmd_single(A, dt=1, k=None, p=10, l=None, sdist='uniform',
-                return_amplitudes=False, return_vandermonde=False, order=True,
-                random_state=None):
-    """Randomized Dynamic Mode Decomposition Single-View.
-
-    Dynamic Mode Decomposition (DMD) is a data processing algorithm which
-    allows to decompose a matrix `A` in space and time. The matrix `A` is
-    decomposed as `A = F * B * V`, where the columns of `F` contain the dynamic modes.
-    The modes are ordered corresponding to the amplitudes stored in the diagonal
-    matrix `B`. `V` is a Vandermonde matrix describing the temporal evolution.
-
-    This algorithms implements a single pass algorithm.
 
     Parameters
     ----------
@@ -269,14 +183,18 @@ def rdmd_single(A, dt=1, k=None, p=10, l=None, sdist='uniform',
         Parameter to control oversampling of column space.
 
     l : integer, default: `l=2*p`.
-        Parameter to control oversampling of row space.
+        Parameter to control oversampling of row space. Only relevant if
+        single_pass == True.
 
-    sdist : str `{'uniform', 'normal', 'orthogonal'}`, default: `sdist='uniform'`.
-        'uniform' : Random test matrices with uniform distributed elements.
+    q : int, optional
+        Number of subspace iterations to perform. Only relevant if
+        singel_pass == False
 
-        'normal' : Random test matrices with normal distributed elements.
+    sdist : str `{'uniform', 'normal'}`
+        Specify the distribution of the sensing matrix `S`.
 
-        'orthogonal' : Orthogonalized random test matrices with uniform distributed elements.
+    single_pass : bool
+        If single_pass == True, perfom single pass of algorithm.
 
     return_amplitudes : bool `{True, False}`
         True: return amplitudes in addition to dynamic modes.
@@ -286,6 +204,11 @@ def rdmd_single(A, dt=1, k=None, p=10, l=None, sdist='uniform',
 
     order :  bool `{True, False}`
         True: return modes sorted.
+
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
 
 
     Returns
@@ -309,8 +232,9 @@ def rdmd_single(A, dt=1, k=None, p=10, l=None, sdist='uniform',
     "Randomized single-view algorithms for low-k matrix approximation" (2016).
     (available at `arXiv <https://arxiv.org/abs/1609.00048>`_).
     """
-    # compute QB decomposition
-    Q, B = rqb_single(A, k=k, p=p, l=l, sdist=sdist, random_state=random_state)
+    # Compute QB decomposition
+    Q, B = rqb(A, k=k, p=p, l=l, q=q, sdist=sdist, single_pass=single_pass,
+               random_state=random_state)
 
     # only difference is we need to premultiply F from dmd
     # vandermonde is basically already computed
