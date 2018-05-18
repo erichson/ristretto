@@ -12,6 +12,7 @@ import scipy.sparse as sp
 
 
 def check_non_negative(X, whom):
+    # NOTE: copied from scikit-learn
     """Check if there is any negative value in an array.
     Parameters
     ----------
@@ -26,6 +27,7 @@ def check_non_negative(X, whom):
 
 
 def check_random_state(seed):
+    # NOTE: copied from scikit-learn
     """Turn seed into a np.random.RandomState instance
     Parameters
     ----------
@@ -50,6 +52,35 @@ def conjugate_transpose(A):
     if A.dtype == np.complexfloating:
         return A.conj().T
     return A.T
+
+
+def safe_sparse_dot(a, b, dense_output=False):
+    # NOTE: copied from scikit-learn
+    """Dot product that handle the sparse matrix case correctly
+
+    Uses BLAS GEMM as replacement for numpy.dot where possible
+    to avoid unnecessary copies.
+
+    Parameters
+    ----------
+    a : array or sparse matrix
+    b : array or sparse matrix
+    dense_output : boolean, default False
+        When False, either ``a`` or ``b`` being sparse will yield sparse
+        output. When True, output will always be an array.
+
+    Returns
+    -------
+    dot_product : array or sparse matrix
+        sparse if ``a`` or ``b`` is sparse and ``dense_output=False``.
+    """
+    if issparse(a) or issparse(b):
+        ret = a * b
+        if dense_output and hasattr(ret, "toarray"):
+            ret = ret.toarray()
+        return ret
+    else:
+        return np.dot(a, b)
 
 
 def nmf_data(m, n, k, factor_type='normal', noise_type='normal', noiselevel=0):

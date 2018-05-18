@@ -1,184 +1,78 @@
 """
-Functions for approximating the range of a matrix A.
+Module containing random sketch generating object.
 """
-from functools import reduce
-import operator as op
+# Authors: N. Benjamin Erichson
+#          Joseph Knox
+# License: GNU General Public License v3.0
+from functools import partial
+import warnings
 
 import numpy as np
 from scipy import linalg
-from scipy import fftpack
-from scipy import stats
-from scipy import sparse
 
-from ..utils import check_random_state
+from . import transforms
+from ..utils import check_random_state, conjugate_transpose
 
+_VALID_DISTRIBUTIONS = ('uniform', 'normal')
+_QR_KWARGS = dict(mode='economic', check_finite=False, overwrite_a=True)
 
-def _axis_wrapper(func):
-    """Wraps range finders, dealing with axis keyword arguments.
+def sketch(A, method='randomized_subspace_iteration', *args, **kwargs):
+    try:
+        func = getattr(transforms, method)
+    except AttributeError:
+        # TODO: write better error message
+        raise ValueError('incorrect method %s passed' )
 
-    If axis == 1: return function
-    If axis == 0: transpose A, return transpose of results
-    else: raise error
-    """
-    def check_axis_and_call(*args, **kwargs):
-        axis = kwargs.get('axis', 1)
-        if axis not in (0, 1):
-            raise ValueError('If supplied, axis must be in (0, 1)')
-        if axis == 0:
-            A, *args = args
-            result = func(A, *args, **kwargs)
-            if isinstance(result, tuple):
-                return tuple(map(np.transpose, result))
-            return result.T
-        return func(*args, **kwargs)
-    return check_axis_and_call
+    return func(*args, **kwargs)
 
 
-def _ortho(X):
-    """orthonormalize the columns of X via QR decomposition"""
-    Q, _ = linalg.qr(X, overwrite_a=True, mode='economic', pivoting=False,
-                     check_finite=False)
-    return Q
+def single_pass_sketch(A, output_rank=None, row_oversample=None,
+                       column_oversample=10, distribution='uniform',
+                       check_finite=False, random_state=None):
 
-
-@_axis_wrapper
-def randomized_uniform_sampling(A, l, axis=1, random_state=None):
-    """Uniform randomized sampling transform.
-
-    Given an m x n matrix A, and an integer l, this returns an m x l
-    random subset of the range of A.
-
-    """
+    if distribution not in _VALID_DISTRIBUTIONS:
+        raise ValueError('distribution must be one of %s, not %s'
+                         % (' '.join(_VALID_DISTRIBUTIONS), distribution))
     random_state = check_random_state(random_state)
 
-    A = np.asarray_chfinite(A)
-    m, n = A.shape
+    # converts A to array, raise ValueError if A has inf or nan
+    A = np.asarray_chkfinite(A) if check_finite else np.asarray(A)
 
-    # sample l columns with equal probability
-    idx = random_state.choice(n, size=l, replace=False)
-    return A[:, idx]
+    if row_oversample is None:
+        row_oversample = 2 * column_oversample
 
+    # check rank
+    # TODO:rank = _output_rank_check(A, output_rank)
+    row_oversample += output_rank
+    column_oversample += output_rank
 
-@_axis_wrapper
-def randomized_basic(A, l, axis=1, random_state=None):
-    """
+    # get numpy random func
+    dist_func = random_state.randn#_get_distribution_func(distribution, random_state)
 
-    Given an m x n matrix A, and an integer l, this scheme computes an m x l
-    orthonormail matrix Q whose range approximates the range of A
+    #Generate a random test matrix Omega
+    Omega = dist_func(size=(A.shape[1], column_oversample)).astype(A.dtype)
+    Psi = dist_func(size=(row_oversample, A.shape[0])).astype(A.dtype)
 
-    Notes
-    -----
-    Also known as randQB
-    """
-    random_state = check_random_state(random_state)
+    if A.dtype == np.complexfloating:
+        real_type = np.float32 if A.dtype == np.complex64 else np.float64
+        Omega += 1j * dist_func(size=(A.shape[1], column_oversample)).astype(real_type)
+        Psi += 1j * dist_func(size=(row_oversample, A.shape[0])).astype(real_type)
 
-    A = np.asarray_chfinite(A)
-    m, n = A.shape
+    # orthogonalize
+    Omega, _ = linalg.qr(Omega, **_QR_KWARGS)
+    Psi , _ = linalg.qr(conjugate_transpose(Psi), **_QR_KWARGS)
+    Psi = conjugate_transpose(Psi)
 
-    # construct gaussian random matrix
-    Omega = random_state.standard_normal(size=(n, l)).astype(A.dtype)
+    #Build sample matrix Y = A * Omega and W = Psi * A
+    #Note: Y should approximate the column space and W the row space of A
+    #Y = A.dot(Omega)
+    #W = Psi.dot(A)
+    #del Omega
 
-    # project A onto Omega
-    Y = A.dot(Omega)
+    #Orthogonalize Y using economic QR decomposition: Y=QR
+    #Q, _ = linalg.qr(Y, **_QR_KWARGS)
+    #U, T = linalg.qr(Psi.dot(Q), **_QR_KWARGS)
 
-    # orthonormalize Y
-    Q = _ortho(Y)
-    B = Q.T.dot(A)
-
-    return Q, B
-
-
-@_axis_wrapper
-def randomized_blocked_adaptive(A, r=10, tol=1e-3, axis=1, random_state=None):
-    """
-
-    Given an m x n matrix A, a tolerance tol, and an iteger r,
-    adaptive_randomized_range_finder computes an orthonormal matrix Q such
-    that `` | I - Q Q^*) A | <= tol `` holds with at least probability
-    ``1 - min(m, n)*10^-r``.
-
-    Notes
-    -----
-    Also known as randQB_b
-    """
-    random_state = check_random_state(random_state)
-
-    A = np.asarray_chfinite(A)
-    m, n = A.shape
-
-    Q_iters, QQT_iters, B_iters = [], [], []
-    for _ in range(r):
-        # construct gaussian random matrix
-        Omega = random_state.standard_normal(size=(n, r)).astype(A.dtype)
-
-        Q = _ortho(A.dot(Omega))
-
-        if Q_iters:
-            # Qi = orth(Qi - sum(Qj Qj^T Qi))
-            Q -= reduce(op.add, map(lambda x: x.dot(Q), QQT_iters))
-
-        Q = _ortho(Q)
-
-        # compute QB decomposition
-        B = Q.T.dot(A)
-
-        # break if we reach desired rank
-        if linalg.norm(A - Q.dot(B)) < tol:
-            break
-
-        # update
-        Q_iters.append(Q)
-        B_iters.append(B)
-        QQT_iters.append(Q.dot(Q.T))
-
-    return np.hstack(Q_iters), np.vstack(B_iters)
-
-
-@_axis_wrapper
-def randomized_subspace_iteration(A, l, n_iter=10, axis=1, random_state=None):
-    """
-
-    Given an m x n matrix A, and an integer l, this scheme computes an m x l
-    orthonormail matrix Q whose range approximates the range of A.
-
-    """
-    random_state = check_random_state(random_state)
-
-    A = np.asarray_chfinite(A)
-    m, n = A.shape
-
-    # construct gaussian random matrix
-    Omega = random_state.standard_normal(size=(n, l)).astype(A)
-
-    # project A onto Omega
-    Y = A.dot(Omega)
-
-    Q = _ortho(Y)
-    for _ in range(n_iter):
-        Z = _ortho(A.T.dot(Q))
-        Q = _ortho(A.dot(Z))
-
-    B = Q.T.dot(A)
-
-    return Q, B
-
-
-# TODO: need to verify
-#def fast_johnson_lindenstrauss_transform(A, l, random_state=None):
-#    """Fast Johnson-Lindenstrauss Transform.
-#
-#    Given an m x n matrix A, and an integer l, this scheme computes an m x l
-#    orthonormail matrix Q whose range approximates the range of A
-#
-#    """
-#    m, n = A.shape
-#
-#    d = random_state.choice((-1, 1), size=l)
-#    d = sparse.spdiags(d, 0, n, n)
-#
-#    # project A onto d, compute DCT
-#    Ad = A.dot(d)
-#    Adf = fftpack.dct(Ad, axis=1, norm='ortho')
-#
-#    # uniformly sample
-#    Q = randomized_uniform_sampling_transform(Adf, l)
+    # Form a smaller matrix
+    #return linalg.solve(T, conjugate_transpose(U).dot(W))
+    return Omega, Psi
