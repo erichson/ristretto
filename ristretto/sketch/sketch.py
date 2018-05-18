@@ -17,81 +17,14 @@ _VALID_SINGLE_DISTRIBUTIONS = ('uniform', 'normal', 'orthogonal')
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 _QR_KWARGS = dict(mode='economic', check_finite=False, overwrite_a=True)
 
+def sketch(A, method='randomized_subspace_iteration', *args, **kwargs):
+    try:
+        func = getattr(range_finders, method)
+    except AttributeError:
+        # TODO: write better error message
+        raise ValueError('incorrect method %s passed' )
 
-def _output_rank_check(A, output_rank):
-    n, m = A.shape
-    rank = min(n, m) if output_rank is None else output_rank
-
-    if rank > min(n, m):
-        warnings.warn('output_rank %d is greater than the minimum '
-                      'dimension of input array A (shape %s). The '
-                      'minimum dimension will be chosen instead',
-                      output_rank, n, m, min(n, m))
-        rank = min(n, m)
-    return rank
-
-
-def _get_distribution_func(distribution, random_state):
-    if distribution == 'uniform':
-        return partial(random_state.uniform, -1, 1)
-    return random_state.standard_normal
-
-
-def sketch(A, out=None, output_rank=None, n_oversample=10, n_iter=2,
-           distribution='uniform', axis=0, check_finite=False, random_state=None):
-    random_state = check_random_state(random_state)
-
-    # converts A to array, raise ValueError if A has inf or nan
-    A = np.asarray_chkfinite(A) if check_finite else np.asarray(A)
-
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
-    if distribution not in _VALID_DISTRIBUTIONS:
-        raise ValueError('distribution must be one of %s, not %s'
-                         % (' '.join(_VALID_DISTRIBUTIONS), distribution))
-
-    if axis not in (0, 1):
-        raise ValueError('If specified, axis must be 0 or 1, not %s' % axis)
-
-    # check rank
-    rank = _output_rank_check(A, output_rank)
-
-    n_oversample += rank
-    size = (n_oversample, A.shape[0]) if axis == 0 else (A.shape[1], n_oversample)
-
-    # get numpy random func
-    dist_func = _get_distribution_func(distribution, random_state)
-
-    #Generate a random test matrix Omega
-    Omega = dist_func(size=size).astype(A.dtype)
-
-    if A.dtype == np.complexfloating:
-        real_type = np.float32 if A.dtype == np.complex64 else np.float64
-        Omega += 1j * dist_func(size=size).astype(real_type)
-
-    #Build sample matrix Y : Y = A * Omega
-    # Y approximates range of A
-    Y = A.dot(Omega)
-    del Omega
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #Orthogonalize Y using economic QR decomposition: Y=QR
-    #If q > 0 perfrom q subspace iterations
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    for _ in range(n_iter):
-        Y, _ = linalg.qr(Y, **_QR_KWARGS)
-        Z, _ = linalg.qr(conjugate_transpose(A).dot(Y), **_QR_KWARGS)
-        Y = A.dot(Z)
-
-    # compute sketch
-    S, _ = linalg.qr(Y, **_QR_KWARGS)
-
-    #if axis == 0:
-    #    return np.dot(conjugate_transpose(S), A, out=out)
-    #return np.dot(A, S, out=out)
-    return S
+    return func(*args, **kwargs)
 
 
 def single_pass_sketch(A, output_rank=None, row_oversample=None,
