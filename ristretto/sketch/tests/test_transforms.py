@@ -5,14 +5,13 @@ from ristretto.sketch.transforms import randomized_uniform_sampling
 from ristretto.sketch.transforms import johnson_lindenstrauss
 from ristretto.sketch.transforms import sparse_johnson_lindenstrauss
 from ristretto.sketch.transforms import fast_johnson_lindenstrauss
-from ristretto.sketch.transforms import randomized_subspace_iteration
 
 
 def test_randomized_uniform_sampling():
     # ------------------------------------------------------------------------
     # tests return correct size
     m, n = 30, 10
-    A = np.ones(m, n)
+    A = np.ones((m, n))
     l = 3
 
     row_trans = randomized_uniform_sampling(A, l, axis=0)
@@ -34,7 +33,7 @@ def test_johnson_linderstrauss():
     # ------------------------------------------------------------------------
     # tests return correct size
     m, n = 30, 10
-    A = np.ones(m, n)
+    A = np.ones((m, n))
     l = 3
 
     row_trans = johnson_lindenstrauss(A, l, axis=0)
@@ -42,10 +41,6 @@ def test_johnson_linderstrauss():
 
     assert row_trans.shape == (l, n)
     assert col_trans.shape == (m, l)
-
-    # ------------------------------------------------------------------------
-    # tests raises incompatible n_subspace
-    assert_raises(ValueError, johnson_lindenstrauss, A, l, n_subspace=-1)
 
     # ------------------------------------------------------------------------
     # tests raises incompatible axis
@@ -60,7 +55,7 @@ def test_sparse_johnson_linderstrauss():
     # ------------------------------------------------------------------------
     # tests return correct size
     m, n = 30, 10
-    A = np.ones(m, n)
+    A = np.ones((m, n))
     l = 3
 
     row_trans = sparse_johnson_lindenstrauss(A, l, axis=0)
@@ -82,7 +77,7 @@ def test_fast_johnson_linderstrauss():
     # ------------------------------------------------------------------------
     # tests return correct size
     m, n = 30, 10
-    A = np.ones(m, n)
+    A = np.ones((m, n))
     l = 3
 
     row_trans = fast_johnson_lindenstrauss(A, l, axis=0)

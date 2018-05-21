@@ -116,7 +116,7 @@ def fast_johnson_lindenstrauss(A, l, axis=1, random_state=None):
     """
     random_state = check_random_state(random_state)
 
-    A = np.asarray_chfinite(A)
+    A = np.asarray_chkfinite(A)
     if A.ndim != 2:
         raise ValueError('A must be a 2D array, not %dD' % A.ndim)
 

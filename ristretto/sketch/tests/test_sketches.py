@@ -8,9 +8,9 @@ def test_random_axis_sample():
     # ------------------------------------------------------------------------
     # tests return correct size
     m, n = 30, 10
-    A = np.ones(m, n)
+    A = np.ones((m, n))
     l = 3
-    random_state = np.RandomState(123)
+    random_state = np.random.RandomState(123)
 
     row_idx = _sketches.random_axis_sample(A, l, 0, random_state)
     col_idx = _sketches.random_axis_sample(A, l, 1, random_state)
@@ -25,23 +25,23 @@ def test_random_axis_sample():
 
     # ------------------------------------------------------------------------
     # tests return unique in axis
-    assert np.isin(row_idx, np.arange(m), assume_unique=True)
-    assert np.isin(col_idx, np.arange(n), assume_unique=True)
+    assert all(np.isin(row_idx, np.arange(m), assume_unique=True))
+    assert all(np.isin(col_idx, np.arange(n), assume_unique=True))
 
 
 def test_random_gaussian_map():
     # ------------------------------------------------------------------------
     # tests return correct shape
     m, n = 30, 10
-    A = np.ones(m, n)
+    A = np.ones((m, n))
     l = 3
-    random_state = np.RandomState(123)
+    random_state = np.random.RandomState(123)
 
     row_sketch = _sketches.random_gaussian_map(A, l, 0, random_state)
     col_sketch = _sketches.random_gaussian_map(A, l, 1, random_state)
 
-    assert row_sketch.shape == (n, l)
     assert row_sketch.shape == (m, l)
+    assert col_sketch.shape == (n, l)
 
     # ------------------------------------------------------------------------
     # tests return correct data type
@@ -53,16 +53,16 @@ def test_sparse_random_map():
     # ------------------------------------------------------------------------
     # tests return correct shape
     m, n = 30, 10
-    A = np.ones(m, n)
+    A = np.ones((m, n))
     l = 3
     density = 1./3
-    random_state = np.RandomState(123)
+    random_state = np.random.RandomState(123)
 
     row_sketch = _sketches.sparse_random_map(A, l, 0, density, random_state)
     col_sketch = _sketches.sparse_random_map(A, l, 1, density, random_state)
 
-    assert row_sketch.shape == (n, l)
     assert row_sketch.shape == (m, l)
+    assert col_sketch.shape == (n, l)
 
     # ------------------------------------------------------------------------
     # tests return correct data type
@@ -71,10 +71,10 @@ def test_sparse_random_map():
 
     # ------------------------------------------------------------------------
     # tests returns correct density
-    assert len(row_sketch.nnz) == int(density*m*n)
-    assert len(col_sketch.nnz) == int(density*m*n)
+    assert row_sketch.nnz == int(density*m*l)
+    assert col_sketch.nnz == int(density*n*l)
 
     # ------------------------------------------------------------------------
     # tests raises error when density not in [0,1]
-    assert_raises(ValueError, _sketches.sparse_random_map, A, l, -1, random_state)
-    assert_raises(ValueError, _sketches.sparse_random_map, A, l, 1.1, random_state)
+    assert_raises(ValueError, _sketches.sparse_random_map, A, l, 0, -1, random_state)
+    assert_raises(ValueError, _sketches.sparse_random_map, A, l, 0, 1.1, random_state)

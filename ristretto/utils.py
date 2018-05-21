@@ -74,7 +74,7 @@ def safe_sparse_dot(a, b, dense_output=False):
     dot_product : array or sparse matrix
         sparse if ``a`` or ``b`` is sparse and ``dense_output=False``.
     """
-    if issparse(a) or issparse(b):
+    if sp.issparse(a) or sp.issparse(b):
         ret = a * b
         if dense_output and hasattr(ret, "toarray"):
             ret = ret.toarray()
