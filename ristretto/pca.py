@@ -13,7 +13,7 @@ from scipy import linalg
 from .qb import rqb
 
 
-def spca(X, n_components=None, alpha=0.1, beta=0.01, max_iter=500, tol=1e-5,
+def spca(A, n_components, alpha=0.1, beta=0.01, max_iter=500, tol=1e-5,
         verbose=True):
     r"""Sparse Principal Component Analysis (SPCA).
 
@@ -27,7 +27,7 @@ def spca(X, n_components=None, alpha=0.1, beta=0.01, max_iter=500, tol=1e-5,
     Parameters
     ----------
     A : array_like, shape `(m, n)`.
-        Real nonnegative input matrix.
+        Input array.
 
     n_components : integer, `n_components << min{m,n}`.
         Target rank, i.e., number of sparse components to be computed.
@@ -67,12 +67,12 @@ def spca(X, n_components=None, alpha=0.1, beta=0.01, max_iter=500, tol=1e-5,
     minimize :math:`1/2 \| X - X B A^T \|^2 + \alpha \|B\|_1 + 1/2 \beta \|B\|^2`
     """
     # Shape of input matrix
-    m, n = X.shape
+    m = A.shape[0]
 
     #--------------------------------------------------------------------
     #   Initialization of Variable Projection Solver
     #--------------------------------------------------------------------
-    _, D, Vt = linalg.svd(X , full_matrices=False, overwrite_a=False)
+    _, D, Vt = linalg.svd(A, full_matrices=False, overwrite_a=False)
     Dmax = D[0] # l2 norm
 
     A = Vt.T[:, 0:n_components]
@@ -137,7 +137,7 @@ def spca(X, n_components=None, alpha=0.1, beta=0.01, max_iter=500, tol=1e-5,
     return(B, A, eigvals, obj)
 
 
-def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
+def robspca(A, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
             tol=1e-5, verbose=True):
     r"""Robust Sparse Principal Component Analysis (Robust SPCA).
 
@@ -151,7 +151,7 @@ def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
     Parameters
     ----------
     A : array_like, shape `(m, n)`.
-        Real nonnegative input matrix.
+        Input array.
 
     n_components : integer, `n_components << min{m,n}`.
         Target rank, i.e., number of sparse components to be computed.
@@ -201,10 +201,10 @@ def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
     minimize :math:`1/2 \| X - X B A^T \|^2 + \alpha \|B\|_1 + 1/2 \beta \|B\|^2`
     """
     # Shape of input matrix
-    m, n = X.shape
+    m = A.shape[0]
 
     # Initialization of Variable Projection Solver
-    U, D, Vt = linalg.svd(X , full_matrices=False, overwrite_a=False)
+    U, D, Vt = linalg.svd(A, full_matrices=False, overwrite_a=False)
 
     Dmax = D[0] #l2 norm
 
@@ -219,7 +219,7 @@ def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
     beta *= Dmax**2
     nu   = 1.0 / (Dmax**2 + beta)
     kappa = nu * alpha
-    S = np.zeros_like(X)
+    S = np.zeros_like(A)
 
     # Apply Variable Projection Solver
     n_iter = 0
@@ -229,8 +229,8 @@ def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
         # Update A:
         # X'XB = UDV'
         # Compute X'XB via SVD of X
-        XS = X - S
-        XB = X.dot(B)
+        XS = A - S
+        XB = A.dot(B)
         Z = (XS).T.dot(XB)
 
         Utilde, Dtilde, Vttilde = linalg.svd( Z , full_matrices=False, overwrite_a=True)
@@ -239,7 +239,7 @@ def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
 
         # Proximal Gradient Descent to Update B
         R = XS - XB.dot(A.T)
-        G = X.T.dot(R.dot(A)) - beta * B
+        G = A.T.dot(R.dot(A)) - beta * B
         B_temp = B + nu * G
 
 
@@ -251,7 +251,7 @@ def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
         B[idxL] = B_temp[idxL] + kappa
 
         # compute residual
-        R = X - X.dot(B).dot(A.T)
+        R = A - A.dot(B).dot(A.T)
 
         # l1 soft-threshold
         idxH = R > gamma
@@ -283,8 +283,8 @@ def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
     return B, A, S, eigvals, obj
 
 
-def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, tol=1e-5,
-          verbose=0, p=20, q=2, random_state=None):
+def rspca(A, n_components, alpha=0.1, beta=0.1, max_iter=1000, tol=1e-5,
+          verbose=0, oversample=10, n_subspace=1, random_state=None):
     r"""Randomized Sparse Principal Component Analysis (rSPCA).
 
     Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
@@ -295,6 +295,11 @@ def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, tol=1e-5,
 
     This algorithm uses randomized methods for linear algebra to accelerate
     the computations.
+
+    The quality of the approximation can be controlled via the oversampling
+    parameter `oversample` and `n_subspace` which specifies the number of
+    subspace iterations.
+
 
     Parameters
     ----------
@@ -319,11 +324,13 @@ def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, tol=1e-5,
     verbose : bool ``{'True', 'False'}``, optional (default ``verbose = True``).
         Display progress.
 
-    p : integer, (default: `p=20`).
-        Parameter to control oversampling.
+    oversample : integer, optional (default: 10)
+        Controls the oversampling of column space. Increasing this parameter
+        may improve numerical accuracy.
 
-    q : integer, (default: `q=2`).
-        Parameter to control number of power (subspace) iterations.
+    n_subspace : integer, default: 1.
+        Parameter to control number of subspace iterations. Increasing this
+        parameter may improve numerical accuracy.
 
     random_state : integer, RandomState instance or None, optional (default ``None``)
         If integer, random_state is the seed used by the random number generator;
@@ -350,10 +357,11 @@ def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, tol=1e-5,
     minimize :math:`1/2 \| X - X B A^T \|^2 + \alpha \|B\|_1 + 1/2 \beta \|B\|^2`
     """
     # Shape of data matrix
-    m, n = X.shape
+    m = A.shape[0]
 
     # Compute QB decomposition
-    Q, Xcompressed = rqb(X, k=n_components, p=p, q=q, random_state=random_state)
+    Q, Xcompressed = rqb(A, rank=n_components, oversample=oversample,
+                         n_subspace=n_subspace, random_state=random_state)
 
     # Compute Sparse PCA
     B, A, eigvals, obj = spca(Xcompressed, n_components=n_components,
@@ -361,6 +369,6 @@ def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, tol=1e-5,
                               max_iter=max_iter, tol=tol, verbose=verbose)
 
     # rescale eigen values
-    eigvals = eigvals * (n_components+p - 1) / (m-1)
+    eigvals = eigvals * (n_components + oversample - 1) / (m-1)
 
-    return(B, A, eigvals, obj)
+    return B, A, eigvals, obj

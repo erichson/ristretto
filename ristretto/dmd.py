@@ -23,7 +23,7 @@ def _get_amplitudes(F, A):
     return result[0]
 
 
-def dmd(A, dt=1, k=None, modes='exact', return_amplitudes=False,
+def dmd(A, rank=None, dt=1, modes='exact', return_amplitudes=False,
         return_vandermonde=False, order=True):
     """Dynamic Mode Decomposition.
 
@@ -36,14 +36,14 @@ def dmd(A, dt=1, k=None, modes='exact', return_amplitudes=False,
 
     Parameters
     ----------
-    A : array_like
-        Real/complex input matrix  `a` with dimensions `(m, n)`.
+    A : array_like, shape `(m, n)`.
+        Input array.
 
-    dt : scalar or array_like
+    rank : int
+        If `rank < (n-1)` low-rank Dynamic Mode Decomposition is computed.
+
+    dt : scalar or array_like, optional (default: 1)
         Factor specifying the time difference between the observations.
-
-    k : int, optional
-        If `k < (n-1)` low-rank Dynamic Mode Decomposition is computed.
 
     modes : str `{'standard', 'exact', 'exact_scaled'}`
         - 'standard' : uses the standard definition to compute the dynamic modes, `F = U * W`.
@@ -66,10 +66,10 @@ def dmd(A, dt=1, k=None, modes='exact', return_amplitudes=False,
         Matrix containing the dynamic modes of shape `(m, n-1)`  or `(m, k)`.
 
     b : array_like, if `return_amplitudes=True`
-        1-D array containing the amplitudes of length `min(n-1, k)`.
+        1-D array containing the amplitudes of length `min(n-1, rank)`.
 
     V : array_like, if `return_vandermonde=True`
-        Vandermonde matrix of shape `(n-1, n-1)`  or `(k, n-1)`.
+        Vandermonde matrix of shape `(n-1, n-1)`  or `(rank, n-1)`.
 
     omega : array_like
         Time scaled eigenvalues: `ln(l)/dt`.
@@ -97,8 +97,8 @@ def dmd(A, dt=1, k=None, modes='exact', return_amplitudes=False,
         raise ValueError('A.dtype must be one of %s, not %s'
                          % (' '.join(_VALID_DTYPES), A.dtype))
 
-    if k is not None and (k < 1 or k > n - 1):
-        raise ValueError('k must be > 1 and less than n - 1')
+    if rank is not None and (rank < 1 or rank > n - 1):
+        raise ValueError('rank must be > 1 and less than n - 1')
 
     #Split data into lef and right snapshot sequence
     X = A[:, :(n-1)] #pointer
@@ -108,10 +108,10 @@ def dmd(A, dt=1, k=None, modes='exact', return_amplitudes=False,
     U, s, Vh = linalg.svd(X, compute_uv=True, full_matrices=False,
                           overwrite_a=False, check_finite=True)
 
-    if k is not None:
-        U = U[:, :k]
-        s = s[:k]
-        Vh = Vh[:k, :]
+    if rank is not None:
+        U = U[:, :rank]
+        s = s[:rank]
+        Vh = Vh[:rank, :]
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Solve the LS problem to find estimate for M using the pseudo-inverse
@@ -156,9 +156,8 @@ def dmd(A, dt=1, k=None, modes='exact', return_amplitudes=False,
     return result
 
 
-def rdmd(A, dt=1, k=None, p=10, l=None, q=2, sdist='uniform', single_pass=False,
-        return_amplitudes=False, return_vandermonde=False, order=True,
-        random_state=None):
+def rdmd(A, rank, dt=1, oversample=10, n_subspace=1, return_amplitudes=False,
+         return_vandermonde=False, order=True, random_state=None):
     """Randomized Dynamic Mode Decomposition.
 
     Dynamic Mode Decomposition (DMD) is a data processing algorithm which
@@ -167,34 +166,29 @@ def rdmd(A, dt=1, k=None, p=10, l=None, q=2, sdist='uniform', single_pass=False,
     The modes are ordered corresponding to the amplitudes stored in the diagonal
     matrix `B`. `V` is a Vandermonde matrix describing the temporal evolution.
 
+    The quality of the approximation can be controlled via the oversampling
+    parameter `oversample` and `n_subspace` which specifies the number of
+    subspace iterations.
+
 
     Parameters
     ----------
-    A : array_like
-        Real/complex input matrix  `a` with dimensions `(m, n)`.
+    A : array_like, shape `(m, n)`.
+        Input array.
+
+    rank : integer
+        Target rank. Best if `rank << min{m,n}`
 
     dt : scalar or array_like
         Factor specifying the time difference between the observations.
 
-    k : int
-        If `k < (n-1)` low-k Dynamic Mode Decomposition is computed.
+    oversample : integer, optional (default: 10)
+        Controls the oversampling of column space. Increasing this parameter
+        may improve numerical accuracy.
 
-    p : integer, default: `p=10`.
-        Parameter to control oversampling of column space.
-
-    l : integer, default: `l=2*p`.
-        Parameter to control oversampling of row space. Only relevant if
-        single_pass == True.
-
-    q : int, optional
-        Number of subspace iterations to perform. Only relevant if
-        single_pass == False
-
-    sdist : str `{'uniform', 'normal'}`
-        Specify the distribution of the sensing matrix `S`.
-
-    single_pass : bool
-        If single_pass == True, perfom single pass of algorithm.
+    n_subspace : integer, default: 1.
+        Parameter to control number of subspace iterations. Increasing this
+        parameter may improve numerical accuracy.
 
     return_amplitudes : bool `{True, False}`
         True: return amplitudes in addition to dynamic modes.
@@ -214,13 +208,13 @@ def rdmd(A, dt=1, k=None, p=10, l=None, q=2, sdist='uniform', single_pass=False,
     Returns
     -------
     F : array_like
-        Matrix containing the dynamic modes of shape `(m, n-1)`  or `(m, k)`.
+        Matrix containing the dynamic modes of shape `(m, rank)`.
 
     b : array_like, if `return_amplitudes=True`
-        1-D array containing the amplitudes of length `min(n-1, k)`.
+        1-D array containing the amplitudes of length `min(n-1, rank)`.
 
     V : array_like, if `return_vandermonde=True`
-        Vandermonde matrix of shape `(n-1, n-1)`  or `(k, n-1)`.
+        Vandermonde matrix of shape `(rank, n-1)`.
 
     omega : array_like
         Time scaled eigenvalues: `ln(l)/dt`.
@@ -233,13 +227,12 @@ def rdmd(A, dt=1, k=None, p=10, l=None, q=2, sdist='uniform', single_pass=False,
     (available at `arXiv <https://arxiv.org/abs/1609.00048>`_).
     """
     # Compute QB decomposition
-    Q, B = rqb(A, k=k, p=p, l=l, q=q, sdist=sdist, single_pass=single_pass,
-               random_state=random_state)
+    Q, B = rqb(A, rank, oversample=oversample, n_subspace=n_subspace, random_state=random_state)
 
     # only difference is we need to premultiply F from dmd
     # vandermonde is basically already computed
     # TODO: factor out the rest so no code is repeated
-    F, V, omega = dmd(B, dt=dt, k=k, modes='standard',return_amplitudes=False,
+    F, V, omega = dmd(B, rank=rank, dt=dt, modes='standard', return_amplitudes=False,
                       return_vandermonde=True, order=order)
 
     #Compute DMD Modes

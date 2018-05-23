@@ -6,6 +6,7 @@ Randomized Singular Value Decomposition
 # License: GNU General Public License v3.0
 
 # TODO: repace nystroem_col with random uniform sampling
+# TODO: conform functions to return like scipy.linalg.eig and rename
 
 from __future__ import division, print_function
 
@@ -18,28 +19,28 @@ from .utils import check_random_state, conjugate_transpose
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 
 
-def reigh(A, k, p=20, q=2, sdist='normal', random_state=None):
+def reigh(A, rank, oversample=10, n_subspace=1, random_state=None):
     """Randomized eigendecompostion.
 
+    The quality of the approximation can be controlled via the oversampling
+    parameter `oversample` and `n_subspace` which specifies the number of
+    subspace iterations.
 
     Parameters
     ----------
-    A : array_like, shape `(n, n)`.
-        Hermitian matrix.
+    A : array_like, shape `(m, n)`.
+        Input array.
 
-    k : integer, `k << n`.
-        Target rank.
+    rank : integer
+        Target rank. Best if `rank << min{m,n}`
 
-    p : integer, default: `p=10`.
-        Parameter to control oversampling.
+    oversample : integer, optional (default: 10)
+        Controls the oversampling of column space. Increasing this parameter
+        may improve numerical accuracy.
 
-    q : integer, default: `q=2`.
-        Parameter to control number of power (subspace) iterations.
-
-    sdist : str `{'uniform', 'normal'}`, default: `sdist='uniform'`.
-        'uniform' : Random test matrix with uniform distributed elements.
-
-        'normal' : Random test matrix with normal distributed elements.
+    n_subspace : integer, default: 1.
+        Parameter to control number of subspace iterations. Increasing this
+        parameter may improve numerical accuracy.
 
     random_state : integer, RandomState instance or None, optional (default ``None``)
         If integer, random_state is the seed used by the random number generator;
@@ -66,9 +67,8 @@ def reigh(A, k, p=20, q=2, sdist='normal', random_state=None):
     (available at `arXiv <http://arxiv.org/abs/0909.4061>`_).
     """
     # get random sketch
-    Q = johnson_lindenstrauss(A, k + p, n_subspace=q, axis=1, random_state=random_state)
-    #Q = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
-    #           axis=1, check_finite=True, random_state=random_state)
+    Q = johnson_lindenstrauss(A, rank + oversample, n_subspace=n_subspace,
+                              axis=1, random_state=random_state)
 
     #Project the data matrix a into a lower dimensional subspace
     B = A.dot(Q)
@@ -85,28 +85,34 @@ def reigh(A, k, p=20, q=2, sdist='normal', random_state=None):
     return w[:k], Q.dot(v)[:,:k]
 
 
-def reigh_nystroem(A, k, p=10, q=2, sdist='normal', random_state=None):
+def reigh_nystroem(A, rank, oversample=10, n_subspace=1, random_state=None):
     """Randomized eigendecompostion using the Nystroem method.
 
+    The quality of the approximation can be controlled via the oversampling
+    parameter `oversample` and `n_subspace` which specifies the number of
+    subspace iterations.
 
     Parameters
     ----------
-    A : array_like, shape `(n, n)`.
-        Positive-definite matrix (PSD) input matrix.
+    A : array_like, shape `(m, n)`.
+        Input array.
 
-    k : integer, `k << n`.
-        Target rank.
+    rank : integer
+        Target rank. Best if `rank << min{m,n}`
 
-    p : integer, default: `p=10`.
-        Parameter to control oversampling.
+    oversample : integer, optional (default: 10)
+        Controls the oversampling of column space. Increasing this parameter
+        may improve numerical accuracy.
 
-    q : integer, default: `q=2`.
-        Parameter to control number of power (subspace) iterations.
+    n_subspace : integer, default: 1.
+        Parameter to control number of subspace iterations. Increasing this
+        parameter may improve numerical accuracy.
 
-    sdist : str `{'uniform', 'normal'}`, default: `sdist='uniform'`.
-        'uniform' : Random test matrix with uniform distributed elements.
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
 
-        'normal' : Random test matrix with normal distributed elements.
 
     Returns
     -------
@@ -127,9 +133,8 @@ def reigh_nystroem(A, k, p=10, q=2, sdist='normal', random_state=None):
     (available at `arXiv <http://arxiv.org/abs/0909.4061>`_).
     """
     # get random sketch
-    S = johnson_lindenstrauss(A, k + p, n_subspace=q, axis=1, random_state=random_state)
-    #S = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
-    #           axis=1, check_finite=True, random_state=random_state)
+    S = johnson_lindenstrauss(A, rank + oversample, n_subspace=n_subspace,
+                              axis=1, random_state=random_state)
 
     #Project the data matrix a into a lower dimensional subspace
     B1 = A.dot(S)
@@ -163,25 +168,30 @@ def reigh_nystroem(A, k, p=10, q=2, sdist='normal', random_state=None):
     return w[:k]**2, v[:,:k]
 
 
-def reigh_nystroem_col(A, k, p=0, random_state=None):
+def reigh_nystroem_col(A, rank, oversample=0, random_state=None):
     """Randomized eigendecompostion using the Nystroem method.
+
+    The quality of the approximation can be controlled via the oversampling
+    parameter `oversample`.
 
 
     Parameters
     ----------
-    A : array_like, shape `(n, n)`.
-        Positive-definite matrix (PSD) input matrix.
+    A : array_like, shape `(m, n)`.
+        Input array.
 
-    k : integer, `k << n`.
-        Target rank.
+    rank : integer
+        Target rank. Best if `rank << min{m,n}`
 
-    p : integer, default: `p=0`.
-        Parameter to control oversampling.
+    oversample : integer, optional (default: 10)
+        Controls the oversampling of column space. Increasing this parameter
+        may improve numerical accuracy.
 
     random_state : integer, RandomState instance or None, optional (default ``None``)
         If integer, random_state is the seed used by the random number generator;
         If RandomState instance, random_state is the random number generator;
         If None, the random number generator is the RandomState instance used by np.random.
+
 
     Returns
     -------
@@ -214,15 +224,11 @@ def reigh_nystroem_col(A, k, p=0, random_state=None):
         raise ValueError('A.dtype must be one of %s, not %s'
                          % (' '.join(_VALID_DTYPES), A.dtype))
 
-    if k is None:
-        # default
-        k = min(m,n)
-
-    if k < 1 or k > min(m, n):
-        raise ValueError("Target rank k must be >= 1 or < min(m, n), not %d" % k)
+    if rank < 1 or rank > min(m, n):
+        raise ValueError("Target rank must be >= 1 or < min(m, n), not %d" % rank)
 
     #Generate a random test matrix Omega
-    idx = np.sort(random_state.choice(n, size=(k+p), replace=False))
+    idx = np.sort(random_state.choice(n, size=(rank+oversample), replace=False))
 
     #Project the data matrix a into a lower dimensional subspace
     B1 = A[:,idx]
@@ -239,10 +245,10 @@ def reigh_nystroem_col(A, k, p=0, random_state=None):
         U, s, _ = linalg.svd(B2, full_matrices=False, overwrite_a=True, check_finite=False)
 
         U = B1.dot(U / s)
-        U = U[:, :k] * np.sqrt(k / n)
-        s = s[:k] * (n / k)
+        U = U[:, :rank] * np.sqrt(rank / n)
+        s = s[:rank] * (n / rank)
 
-        return s[:k], U
+        return s[:rank], U
 
     # Upper triangular solve
     F = linalg.solve_triangular(C, conjugate_transpose(B1), lower=True,
@@ -253,4 +259,4 @@ def reigh_nystroem_col(A, k, p=0, random_state=None):
     v, w, _ = linalg.svd(conjugate_transpose(F), compute_uv=True,
                          full_matrices=False, overwrite_a=True, check_finite=False)
 
-    return w[:k]**2, v[:, :k]
+    return w[:rank]**2, v[:, :rank]

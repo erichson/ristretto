@@ -13,7 +13,7 @@ from scipy import linalg
 from .interp_decomp import interp_decomp, rinterp_decomp
 
 
-def cur(A, k=None, index_set=False):
+def cur(A, rank=None, index_set=False):
     """CUR decomposition.
 
     Algorithm for computing the low-rank CUR
@@ -28,10 +28,10 @@ def cur(A, k=None, index_set=False):
     Parameters
     ----------
     A : array_like, shape `(m, n)`.
-        Input matrix.
+        Input array.
 
-    k : integer, `k << min{m,n}`.
-        Target rank.
+    rank : integer
+        Target rank. Best if `rank << min{m,n}`
 
     index_set: str `{'True', 'False'}`, default: `index_set='False'`.
         'True' : Return column/row index set instead of `C` and `R`.
@@ -57,13 +57,13 @@ def cur(A, k=None, index_set=False):
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
     # compute column ID
-    J, V = interp_decomp(A, k=k, mode='column', index_set=True)
+    J, V = interp_decomp(A, rank, mode='column', index_set=True)
 
     # select column subset
     C = A[:, J]
 
     # compute row ID of C
-    Z, I = interp_decomp(C, k=k, mode='row', index_set=True)
+    Z, I = interp_decomp(C, rank, mode='row', index_set=True)
 
     # select row subset
     R = A[I, :]
@@ -77,31 +77,37 @@ def cur(A, k=None, index_set=False):
     return C, U, R
 
 
-def rcur(A, k=None, p=10, q=1, index_set=False, random_state=None):
+def rcur(A, rank, oversample=10, n_subspace=1, index_set=False, random_state=None):
     """Randomized CUR decomposition.
 
     Randomized algorithm for computing the approximate low-rank CUR
-    decomposition of a rectangular `(m, n)` matrix `A`, with target rank `k << min{m, n}`.
+    decomposition of a rectangular `(m, n)` matrix `A`, with target rank `rank << min{m, n}`.
     Input matrix is factored as `A = C * U * R`, using the column/row pivoted QR decomposition.
     The factor matrix `C` is formed of a subset of columns of `A`,
     also called the partial column skeleton. The factor matrix `R` is formed as
     a subset of rows of `A` also called the partial row skeleton.
     The factor matrix `U` is formed so that `U = C**-1 * A * R**-1` is satisfied.
 
+    The quality of the approximation can be controlled via the oversampling
+    parameter `oversample` and `n_subspace` which specifies the number of
+    subspace iterations.
+
 
     Parameters
     ----------
     A : array_like, shape `(m, n)`.
-        Input matrix.
+        Input array.
 
-    k : integer, `k << min{m,n}`.
-        Target rank.
+    rank : integer
+        Target rank. Best if `rank << min{m,n}`
 
-    p : integer, default: `p=10`.
-        Parameter to control oversampling.
+    oversample : integer, optional (default: 10)
+        Controls the oversampling of column space. Increasing this parameter
+        may improve numerical accuracy.
 
-    q : integer, default: `q=1`.
-        Parameter to control number of power (subspace) iterations.
+    n_subspace : integer, default: 1.
+        Parameter to control number of subspace iterations. Increasing this
+        parameter may improve numerical accuracy.
 
     index_set: str `{'True', 'False'}`, default: `index_set='False'`.
         'True' : Return column/row index set instead of `C` and `R`.
@@ -114,13 +120,13 @@ def rcur(A, k=None, p=10, q=1, index_set=False, random_state=None):
 
     Returns
     -------
-    C:  array_like, shape `(m, k)`.
+    C:  array_like, shape `(m, rank)`.
             Partial column skeleton.
 
-    U : array_like, shape `(k, k)`.
+    U : array_like, shape `(rank, rank)`.
             Well-conditioned matrix.
 
-    R : array_like, shape `(k, n)`.
+    R : array_like, shape `(rank, n)`.
             Partial row skeleton.
 
 
@@ -133,15 +139,15 @@ def rcur(A, k=None, p=10, q=1, index_set=False, random_state=None):
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
     # Compute column ID
-    J, V = rinterp_decomp(A, k=k, p=p, q=q, mode='column', index_set=True,
-                          random_state=random_state)
+    J, V = rinterp_decomp(A, rank, oversample=oversample, n_subspace=n_subspace,
+                          mode='column', index_set=True, random_state=random_state)
 
     # Select column subset
     C = A[:, J]
 
     # Compute row ID of C
-    Z, I = rinterp_decomp(C, k=k, p=p, q=q,  mode='row', index_set=True,
-                          random_state=random_state)
+    Z, I = rinterp_decomp(A, rank, oversample=oversample, n_subspace=n_subspace,
+                          mode='row', index_set=True, random_state=random_state)
 
     # Select row subset
     R = A[I, :]

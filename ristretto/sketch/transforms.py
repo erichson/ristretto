@@ -1,6 +1,9 @@
 """
 Functions for approximating the range of a matrix A.
 """
+from __future__ import division
+from math import log
+
 import numpy as np
 from scipy import fftpack
 from scipy import sparse
@@ -57,7 +60,8 @@ def johnson_lindenstrauss(A, l, n_subspace=None, axis=1, random_state=None):
     return Q
 
 
-def sparse_johnson_lindenstrauss(A, l, density=None, axis=1, random_state=None):
+def sparse_johnson_lindenstrauss(A, l, n_subspace=1, density=None, axis=1,
+                                 random_state=None):
     """
 
     Given an m x n matrix A, and an integer l, this scheme computes an m x l
@@ -78,15 +82,21 @@ def sparse_johnson_lindenstrauss(A, l, density=None, axis=1, random_state=None):
         raise ValueError('If supplied, axis must be in (0, 1)')
 
     if density is None:
-        density = 1.0 / 3
+        density = A.shape[0] / log(A.shape[0])
 
+    # construct sparse sketch
     Omega = _sketches.sparse_random_map(A, l, axis, density, random_state)
 
     # project A onto Omega
     if axis == 0:
-        return safe_sparse_dot(Omega.T, A)
-    return safe_sparse_dot(A, Omega)
+        Q = safe_sparse_dot(Omega.T, A)
+    else:
+        Q = safe_sparse_dot(A, Omega)
 
+    if n_subspace is not None:
+        Q = perform_subspace_iterations(A, Q, n_iter=n_subspace, axis=axis)
+
+    return Q
 
 def fast_johnson_lindenstrauss(A, l, axis=1, random_state=None):
     """

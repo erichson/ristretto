@@ -15,41 +15,38 @@ from .sketch.transforms import johnson_lindenstrauss
 from .utils import conjugate_transpose
 
 
-def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform', random_state=None):
+def rlu(A, rank, oversample=10, n_subspace=1, permute=False, random_state=None):
     """Randomized LU Decomposition.
 
     Randomized algorithm for computing the approximate low-rank LU
-    decomposition of a rectangular `(m, n)` matrix `A`, with target rank `k << min{m, n}`.
-    The input matrix is factored as `A = P * L * U * C`, where
+    decomposition of a rectangular `(m, n)` matrix `A`, with target rank
+    `rank << min{m, n}`. The input matrix is factored as `A = P * L * U * C`, where
     `L` and `U` are the lower and upper triangular matrices, respectively.
     And `P` and `C` are the row and column permutation matrices.
 
     The quality of the approximation can be controlled via the oversampling
-    parameter `p` and the parameter `q` which specifies the number of
+    parameter `oversample` and `n_subspace` which specifies the number of
     subspace iterations.
 
 
     Parameters
     ----------
     A : array_like, shape `(m, n)`.
-        Real nonnegative input matrix.
+        Input array.
+
+    rank : integer
+        Target rank. Best if `rank << min{m,n}`
+
+    oversample : integer, optional (default: 10)
+        Controls the oversampling of column space. Increasing this parameter
+        may improve numerical accuracy.
+
+    n_subspace : integer, default: 1.
+        Parameter to control number of subspace iterations. Increasing this
+        parameter may improve numerical accuracy.
 
     permute : bool, default: `permute=False`.
         If `True`, perform the multiplication P*L and U*C.
-
-    k : integer, `k << min{m,n}`.
-        Target rank.
-
-    p : integer, default: `p=10`.
-        Parameter to control oversampling.
-
-    q : integer, default: `q=1`.
-        Parameter to control number of power (subspace) iterations.
-
-    sdist : str `{'uniform', 'normal'}`, default: `sdist='uniform'`.
-        'uniform' : Random test matrix with uniform distributed elements.
-
-        'normal' : Random test matrix with normal distributed elements.
 
     random_state : integer, RandomState instance or None, optional (default ``None``)
         If integer, random_state is the seed used by the random number generator;
@@ -59,16 +56,16 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform', random_state=None)
     Returns
     -------
     P : array_like, shape `(m, m)`.
-        Row permutation matrix, if `permute_l=False`.
+        Row permutation matrix, only returned if `permute == False`.
 
-    L :  array_like, shape `(m, k)`.
+    L :  array_like, shape `(m, rank)`.
         Lower triangular matrix.
 
-    U : array_like, shape `(k, n)`.
+    U : array_like, shape `(rank, n)`.
         Upper triangular matrix.
 
     C : array_like, shape `(n, n)`.
-        Column Permutation matrix, if `permute=False`.
+        Column permutation matrix, only returned if `permute == False`.
 
 
     References
@@ -85,7 +82,8 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform', random_state=None)
     (available at `arXiv <https://arxiv.org/abs/1310.7202>`_).
     """
     # get random sketch
-    S = johnson_lindenstrauss(A, k + p, n_subspace=q, axis=1, random_state=random_state)
+    S = johnson_lindenstrauss(A, rank + oversample, n_subspace=n_subspace,
+                              random_state=random_state)
 
     # Compute pivoted LU decompostion of the orthonormal basis matrix Q.
     # Q = P * L * U
@@ -93,7 +91,7 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform', random_state=None)
     _, r ,_ = sparse.find(P.T)
 
     # Truncate L_tilde
-    L_tilde = L_tilde[:, :k]
+    L_tilde = L_tilde[:, :rank]
 
     # Form smaller matrix B
     U, s, Vt = linalg.svd(L_tilde, compute_uv=True, full_matrices=False,
