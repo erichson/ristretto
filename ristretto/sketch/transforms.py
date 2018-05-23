@@ -18,20 +18,12 @@ def randomized_uniform_sampling(A, l, axis=1, random_state=None):
 
     """
     random_state = check_random_state(random_state)
-
     A = np.asarray(A)
-    if A.ndim != 2:
-        raise ValueError('A must be a 2D array, not %dD' % A.ndim)
-
-    if axis not in (0, 1):
-        raise ValueError('If supplied, axis must be in (0, 1)')
 
     # sample l rows/columns with equal probability
     idx = _sketches.random_axis_sample(A, l, axis, random_state)
 
-    if axis == 0:
-        return A[idx]
-    return A[:, idx]
+    return np.take(A, idx, axis=axis)
 
 
 def johnson_lindenstrauss(A, l, n_subspace=None, axis=1, random_state=None):
@@ -40,10 +32,6 @@ def johnson_lindenstrauss(A, l, n_subspace=None, axis=1, random_state=None):
     Given an m x n matrix A, and an integer l, this scheme computes an m x l
     orthonormal matrix Q whose range approximates the range of A
 
-    Notes
-    -----
-    Johnson-Lindenstrauss
-    #Also known as randQB
     """
     random_state = check_random_state(random_state)
 
@@ -79,9 +67,6 @@ def sparse_johnson_lindenstrauss(A, l, density=None, axis=1, random_state=None):
     ----------
     density : sparse matrix density
 
-    Notes
-    -----
-    #Also known as randQB
     """
     random_state = check_random_state(random_state)
 
@@ -109,10 +94,6 @@ def fast_johnson_lindenstrauss(A, l, axis=1, random_state=None):
     Given an m x n matrix A, and an integer l, this scheme computes an m x l
     orthonormal matrix Q whose range approximates the range of A
 
-    Notes
-    -----
-    Johnson-Lindenstrauss
-    #Also known as randQB
     """
     random_state = check_random_state(random_state)
 

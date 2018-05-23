@@ -5,12 +5,14 @@ Randomized Singular Value Decomposition
 #          Joseph Knox
 # License: GNU General Public License v3.0
 
+# TODO: repace nystroem_col with random uniform sampling
+
 from __future__ import division, print_function
 
 import numpy as np
 from scipy import linalg
 
-from .sketch import sketch
+from .sketch.transforms import johnson_lindenstrauss, randomized_uniform_sampling
 from .utils import check_random_state, conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
@@ -64,8 +66,9 @@ def reigh(A, k, p=20, q=2, sdist='normal', random_state=None):
     (available at `arXiv <http://arxiv.org/abs/0909.4061>`_).
     """
     # get random sketch
-    Q = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
-               axis=1, check_finite=True, random_state=random_state)
+    Q = johnson_lindenstrauss(A, k + p, n_subspace=q, axis=1, random_state=random_state)
+    #Q = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
+    #           axis=1, check_finite=True, random_state=random_state)
 
     #Project the data matrix a into a lower dimensional subspace
     B = A.dot(Q)
@@ -124,8 +127,9 @@ def reigh_nystroem(A, k, p=10, q=2, sdist='normal', random_state=None):
     (available at `arXiv <http://arxiv.org/abs/0909.4061>`_).
     """
     # get random sketch
-    S = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
-               axis=1, check_finite=True, random_state=random_state)
+    S = johnson_lindenstrauss(A, k + p, n_subspace=q, axis=1, random_state=random_state)
+    #S = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
+    #           axis=1, check_finite=True, random_state=random_state)
 
     #Project the data matrix a into a lower dimensional subspace
     B1 = A.dot(S)
@@ -197,6 +201,9 @@ def reigh_nystroem_col(A, k, p=0, random_state=None):
     decompositions" (2009).
     (available at `arXiv <http://arxiv.org/abs/0909.4061>`_).
     """
+
+    # TODO: repace with random uniform sampling
+
     random_state = check_random_state(random_state)
 
     # converts A to array, raise ValueError if A has inf or nan

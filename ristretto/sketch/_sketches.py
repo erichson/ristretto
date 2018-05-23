@@ -17,6 +17,11 @@ def random_gaussian_map(A, l, axis, random_state):
     return random_state.standard_normal(size=(A.shape[axis], l)).astype(A.dtype)
 
 
+def random_uniform_map(A, l, axis, random_state):
+    """generate random uniform map"""
+    return random_state.uniform(-1, 1, size=(A.shape[axis], l)).astype(A.dtype)
+
+
 def sparse_random_map(A, l, axis, density, random_state):
     """generate sparse random sampling"""
     # TODO: evaluete random_state paramter: we want to pass it to sparse.random

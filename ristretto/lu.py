@@ -11,7 +11,7 @@ import numpy as np
 from scipy import linalg
 from scipy import sparse
 
-from .sketch import sketch
+from .sketch.transforms import johnson_lindenstrauss
 from .utils import conjugate_transpose
 
 
@@ -85,8 +85,7 @@ def rlu(A, permute=False, k=None, p=10, q=1, sdist='uniform', random_state=None)
     (available at `arXiv <https://arxiv.org/abs/1310.7202>`_).
     """
     # get random sketch
-    S = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
-               axis=1, check_finite=True, random_state=random_state)
+    S = johnson_lindenstrauss(A, k + p, n_subspace=q, axis=1, random_state=random_state)
 
     # Compute pivoted LU decompostion of the orthonormal basis matrix Q.
     # Q = P * L * U

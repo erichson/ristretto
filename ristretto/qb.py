@@ -5,10 +5,17 @@ Randomized QB Decomposition
 #          Joseph Knox
 # License: GNU General Public License v3.0
 
+# NOTE: we should depricate single_pass because:
+#       we get the same performance by perfoming a single subspace
+#       iteration, the single pass construct doesn't really help us
+#       here unless we write it in C/Cython and compute the products
+#              Y = A * Omega, Y_tilde = A * Omega_tilde 
+#       in sinlge passes
+
 import numpy as np
 from scipy import linalg
 
-from .sketch import sketch, single_pass_sketch
+from .sketch.transforms import johnson_lindenstrauss
 from .utils import conjugate_transpose
 
 
@@ -50,7 +57,9 @@ def rqb(A, k=None, p=10, l=None, q=1, sdist='normal', single_pass=False,
         'normal' : Random test matrix with normal distributed elements.
 
     single_pass : bool
-        If single_pass == True, perfom single pass of algorithm.
+        If single_pass == True, perfom single pass of algorithm, meaning that
+        in the algorithm only accesses A directly a single time. Beneficial A
+        is large.
 
     random_state : integer, RandomState instance or None, optional (default ``None``)
         If integer, random_state is the seed used by the random number generator;
@@ -81,32 +90,18 @@ def rqb(A, k=None, p=10, l=None, q=1, sdist='normal', single_pass=False,
     and GPU architectures" (2015).
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
+    # get random sketch
     if single_pass:
-        # Form a smaller matrix
-        Omega, Psi = single_pass_sketch(
-            A, output_rank=k, column_oversample=p, row_oversample=l,
-            distribution=sdist, check_finite=True, random_state=random_state)
+        # NOTE: we get the same performance by perfoming a single subspace
+        #       iteration, the single pass construct doesn't really help us
+        #       here unless we write it in C/Cython and compute the products
+        #              Y = A * Omega, Y_tilde = A * Omega_tilde 
+        #       in sinlge passes
+        q = 1
 
-        #Build sample matrix Y = A * Omega and W = Psi * A
-        #Note: Y should approximate the column space and W the row space of A
-        Y = A.dot(Omega)
-        W = Psi.dot(A)
-        del Omega
+    Q = johnson_lindenstrauss(A, k + p, n_subspace=q, random_state=random_state)
 
-        #Orthogonalize Y using economic QR decomposition: Y=QR
-        Q, _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True)
-        U, T = linalg.qr(Psi.dot(Q), mode='economic', check_finite=False, overwrite_a=False)
-
-        # Form a smaller matrix
-        B = linalg.solve(T, conjugate_transpose(U).dot(W), check_finite=False,
-                         overwrite_a=True, overwrite_b=True)
-
-    else:
-        # get random sketch
-        Q = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
-                   axis=1, check_finite=True, random_state=random_state)
-
-        #Project the data matrix a into a lower dimensional subspace
-        B = conjugate_transpose(Q).dot(A)
+    #Project the data matrix a into a lower dimensional subspace
+    B = conjugate_transpose(Q).dot(A)
 
     return Q, B

@@ -11,12 +11,16 @@ import numpy as np
 from scipy import linalg
 
 from .qb import rqb
-from .sketch import _get_distribution_func
 from .utils import check_random_state, conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 _VALID_SDISTS = ('uniform', 'normal')
 _VALID_MODES = ('row', 'column')
+
+def _get_distribution_func(distribution, random_state):
+    if distribution == 'uniform':
+        return partial(random_state.uniform, -1, 1)
+    return random_state.standard_normal
 
 
 def interp_decomp(A, k=None, mode='column', index_set=False):

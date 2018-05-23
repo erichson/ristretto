@@ -22,11 +22,11 @@ def test_randomized_uniform_sampling():
 
     # ------------------------------------------------------------------------
     # tests raises incompatible axis
-    assert_raises(ValueError, randomized_uniform_sampling, A, l, axis=2)
+    assert_raises(IndexError, randomized_uniform_sampling, A, l, axis=2)
 
     # ------------------------------------------------------------------------
     # tests raises incompatible A dimensions
-    assert_raises(ValueError, randomized_uniform_sampling, A[5], l)
+    assert_raises(IndexError, randomized_uniform_sampling, A[5], l)
 
 
 def test_johnson_linderstrauss():
