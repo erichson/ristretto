@@ -82,7 +82,7 @@ def reigh(A, rank, oversample=10, n_subspace=1, random_state=None):
     v[:, :A.shape[1]] = v[:, A.shape[1] - 1::-1]
     w = w[::-1]
 
-    return w[:k], Q.dot(v)[:,:k]
+    return w[:rank], Q.dot(v)[:,:rank]
 
 
 def reigh_nystroem(A, rank, oversample=10, n_subspace=1, random_state=None):
@@ -154,7 +154,7 @@ def reigh_nystroem(A, rank, oversample=10, n_subspace=1, random_state=None):
         v[:, :A.shape[1]] = v[:, A.shape[1]-1::-1]
         w = w[::-1]
 
-        return w[:k], S.dot(v)[:,:k]
+        return w[:rank], S.dot(v)[:,:rank]
 
     # Upper triangular solve
     F = linalg.solve_triangular(C, conjugate_transpose(B1), lower=True,
@@ -165,7 +165,7 @@ def reigh_nystroem(A, rank, oversample=10, n_subspace=1, random_state=None):
     v, w, _ = linalg.svd(conjugate_transpose(F), compute_uv=True, full_matrices=False,
                          overwrite_a=True, check_finite=False)
 
-    return w[:k]**2, v[:,:k]
+    return w[:rank]**2, v[:,:rank]
 
 
 def reigh_nystroem_col(A, rank, oversample=0, random_state=None):

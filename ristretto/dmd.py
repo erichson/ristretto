@@ -97,8 +97,8 @@ def dmd(A, rank=None, dt=1, modes='exact', return_amplitudes=False,
         raise ValueError('A.dtype must be one of %s, not %s'
                          % (' '.join(_VALID_DTYPES), A.dtype))
 
-    if rank is not None and (rank < 1 or rank > n - 1):
-        raise ValueError('rank must be > 1 and less than n - 1')
+    if rank is not None and (rank < 1 or rank > n ):
+        raise ValueError('rank must be > 1 and less than n')
 
     #Split data into lef and right snapshot sequence
     X = A[:, :(n-1)] #pointer

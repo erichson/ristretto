@@ -1,5 +1,5 @@
 """
-Module containing utility functions for 
+Module containing utility functions for
 """
 from scipy import linalg
 
@@ -24,12 +24,12 @@ def perform_subspace_iterations(A, Q, n_iter=1, axis=0):
 
     # perform subspace iterations
     for _ in range(n_iter):
-        #if axis == 0:
-        #    Z = orthonormalize(A.dot(Q.T))
-        #    Q = orthonormalize(A.T.dot(Z))
-        #else:
-        Z = orthonormalize(A.T.dot(Q))
-        Q = orthonormalize(A.dot(Z))
+        if axis == 0:
+            Z = orthonormalize(A.dot(Q))
+            Q = orthonormalize(A.T.dot(Z))
+        else:
+            Z = orthonormalize(A.T.dot(Q))
+            Q = orthonormalize(A.dot(Z))
 
     if axis == 0:
         return Q.T

@@ -60,7 +60,7 @@ def johnson_lindenstrauss(A, l, n_subspace=None, axis=1, random_state=None):
     return Q
 
 
-def sparse_johnson_lindenstrauss(A, l, n_subspace=1, density=None, axis=1,
+def sparse_johnson_lindenstrauss(A, l, n_subspace=None, density=None, axis=1,
                                  random_state=None):
     """
 
@@ -82,7 +82,7 @@ def sparse_johnson_lindenstrauss(A, l, n_subspace=1, density=None, axis=1,
         raise ValueError('If supplied, axis must be in (0, 1)')
 
     if density is None:
-        density = A.shape[0] / log(A.shape[0])
+        density = log(A.shape[0]) / A.shape[0]
 
     # construct sparse sketch
     Omega = _sketches.sparse_random_map(A, l, axis, density, random_state)

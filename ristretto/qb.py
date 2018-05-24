@@ -73,11 +73,11 @@ def rqb(A, rank, oversample=10, n_subspace=1, sparse=False, random_state=None):
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
     if sparse:
-        Q = johnson_lindenstrauss(A, rank + oversample, n_subspace=n_subspace,
-                                  random_state=random_state)
-    else:
         Q = sparse_johnson_lindenstrauss(
             A, rank + oversample, n_subspace=n_subspace, random_state=random_state)
+    else:
+        Q = johnson_lindenstrauss(A, rank + oversample, n_subspace=n_subspace,
+                                  random_state=random_state)
 
     #Project the data matrix a into a lower dimensional subspace
     B = conjugate_transpose(Q).dot(A)

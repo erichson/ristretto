@@ -12,7 +12,7 @@ def test_orthonormalize():
 
     B = orthonormalize(A, overwrite_a=False)
     over = orthonormalize(A, overwrite_a=True)
-    
+ 
     assert A is not B
     # TODO: when does overwrite_a even work? (fortran?)
     #assert A is over
@@ -34,8 +34,8 @@ def test_perform_subspace_iterations():
     Q_row = np.eye(10)[:5]
     Q_col = np.eye(10)[:,:5]
 
-    rowwise = perform_subspace_iterations(A, Q_row, axis=0)
-    colwise = perform_subspace_iterations(A, Q_col, axis=1)
+    rowwise = perform_subspace_iterations(A, Q_row, n_iter=2, axis=0)
+    colwise = perform_subspace_iterations(A, Q_col, n_iter=2, axis=1)
 
     assert rowwise.shape == Q_row.shape
     assert colwise.shape == Q_col.shape
