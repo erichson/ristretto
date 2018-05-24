@@ -107,7 +107,7 @@ def interp_decomp(A, rank, mode='column', index_set=False):
     return conjugate_transpose(V), conjugate_transpose(C)
 
 
-def rinterp_decomp(A, rank, oversample=10, n_subspace=1, mode='column',
+def rinterp_decomp(A, rank, oversample=10, n_subspace=2, mode='column',
                    index_set=False, random_state=None):
     """Randomized interpolative decomposition (rID).
 
@@ -139,7 +139,7 @@ def rinterp_decomp(A, rank, oversample=10, n_subspace=1, mode='column',
         Controls the oversampling of column space. Increasing this parameter
         may improve numerical accuracy.
 
-    n_subspace : integer, default: 1.
+    n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
 

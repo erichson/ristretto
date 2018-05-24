@@ -156,7 +156,7 @@ def dmd(A, rank=None, dt=1, modes='exact', return_amplitudes=False,
     return result
 
 
-def rdmd(A, rank, dt=1, oversample=10, n_subspace=1, return_amplitudes=False,
+def rdmd(A, rank, dt=1, oversample=10, n_subspace=2, return_amplitudes=False,
          return_vandermonde=False, order=True, random_state=None):
     """Randomized Dynamic Mode Decomposition.
 
@@ -186,7 +186,7 @@ def rdmd(A, rank, dt=1, oversample=10, n_subspace=1, return_amplitudes=False,
         Controls the oversampling of column space. Increasing this parameter
         may improve numerical accuracy.
 
-    n_subspace : integer, default: 1.
+    n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
 

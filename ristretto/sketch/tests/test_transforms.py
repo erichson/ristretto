@@ -43,14 +43,6 @@ def test_johnson_linderstrauss():
     assert col_trans.shape == (m, l)
 
     # ------------------------------------------------------------------------
-    # tests subsapce iters
-    row_trans = johnson_lindenstrauss(A, l, n_subspace=2, axis=0)
-    col_trans = johnson_lindenstrauss(A, l, n_subspace=2, axis=1)
-
-    assert row_trans.shape == (l, n)
-    assert col_trans.shape == (m, l)
-
-    # ------------------------------------------------------------------------
     # tests raises incompatible axis
     assert_raises(ValueError, johnson_lindenstrauss, A, l, axis=2)
 
@@ -68,14 +60,6 @@ def test_sparse_johnson_linderstrauss():
 
     row_trans = sparse_johnson_lindenstrauss(A, l, axis=0)
     col_trans = sparse_johnson_lindenstrauss(A, l, axis=1)
-
-    assert row_trans.shape == (l, n)
-    assert col_trans.shape == (m, l)
-
-    # ------------------------------------------------------------------------
-    # tests subsapce iters
-    row_trans = sparse_johnson_lindenstrauss(A, l, n_subspace=2, axis=0)
-    col_trans = sparse_johnson_lindenstrauss(A, l, n_subspace=2, axis=1)
 
     assert row_trans.shape == (l, n)
     assert col_trans.shape == (m, l)

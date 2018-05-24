@@ -9,10 +9,11 @@ import numpy as np
 from scipy import linalg
 
 from .sketch.transforms import johnson_lindenstrauss, sparse_johnson_lindenstrauss
+from .sketch.utils import perform_subspace_iterations
 from .utils import conjugate_transpose
 
 
-def rqb(A, rank, oversample=10, n_subspace=1, sparse=False, random_state=None):
+def rqb(A, rank, oversample=10, n_subspace=2, sparse=False, random_state=None):
     """Randomized QB Decomposition.
 
     Randomized algorithm for computing the approximate low-rank QB
@@ -36,7 +37,7 @@ def rqb(A, rank, oversample=10, n_subspace=1, sparse=False, random_state=None):
         Controls the oversampling of column space. Increasing this parameter
         may improve numerical accuracy.
 
-    n_subspace : integer, default: 1.
+    n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
 
@@ -73,11 +74,13 @@ def rqb(A, rank, oversample=10, n_subspace=1, sparse=False, random_state=None):
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
     if sparse:
-        Q = sparse_johnson_lindenstrauss(
-            A, rank + oversample, n_subspace=n_subspace, random_state=random_state)
+        Q = sparse_johnson_lindenstrauss(A, rank + oversample,
+                                         random_state=random_state)
     else:
-        Q = johnson_lindenstrauss(A, rank + oversample, n_subspace=n_subspace,
-                                  random_state=random_state)
+        Q = johnson_lindenstrauss(A, rank + oversample, random_state=random_state)
+
+    if n_subspace > 0:
+        Q = perform_subspace_iterations(A, Q, n_iter=n_subspace, axis=1)
 
     #Project the data matrix a into a lower dimensional subspace
     B = conjugate_transpose(Q).dot(A)

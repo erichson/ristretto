@@ -284,7 +284,7 @@ def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
 
 
 def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, tol=1e-5,
-          verbose=0, oversample=10, n_subspace=1, random_state=None):
+          verbose=0, oversample=10, n_subspace=2, random_state=None):
     r"""Randomized Sparse Principal Component Analysis (rSPCA).
 
     Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
@@ -328,7 +328,7 @@ def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, tol=1e-5,
         Controls the oversampling of column space. Increasing this parameter
         may improve numerical accuracy.
 
-    n_subspace : integer, default: 1.
+    n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
 

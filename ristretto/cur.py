@@ -77,7 +77,7 @@ def cur(A, rank=None, index_set=False):
     return C, U, R
 
 
-def rcur(A, rank, oversample=10, n_subspace=1, index_set=False, random_state=None):
+def rcur(A, rank, oversample=10, n_subspace=2, index_set=False, random_state=None):
     """Randomized CUR decomposition.
 
     Randomized algorithm for computing the approximate low-rank CUR
@@ -105,7 +105,7 @@ def rcur(A, rank, oversample=10, n_subspace=1, index_set=False, random_state=Non
         Controls the oversampling of column space. Increasing this parameter
         may improve numerical accuracy.
 
-    n_subspace : integer, default: 1.
+    n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
 

@@ -14,12 +14,13 @@ import numpy as np
 from scipy import linalg
 
 from .sketch.transforms import johnson_lindenstrauss, randomized_uniform_sampling
+from .sketch.utils import perform_subspace_iterations
 from .utils import check_random_state, conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 
 
-def reigh(A, rank, oversample=10, n_subspace=1, random_state=None):
+def reigh(A, rank, oversample=10, n_subspace=2, random_state=None):
     """Randomized eigendecompostion.
 
     The quality of the approximation can be controlled via the oversampling
@@ -38,7 +39,7 @@ def reigh(A, rank, oversample=10, n_subspace=1, random_state=None):
         Controls the oversampling of column space. Increasing this parameter
         may improve numerical accuracy.
 
-    n_subspace : integer, default: 1.
+    n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
 
@@ -67,8 +68,10 @@ def reigh(A, rank, oversample=10, n_subspace=1, random_state=None):
     (available at `arXiv <http://arxiv.org/abs/0909.4061>`_).
     """
     # get random sketch
-    Q = johnson_lindenstrauss(A, rank + oversample, n_subspace=n_subspace,
-                              axis=1, random_state=random_state)
+    Q = johnson_lindenstrauss(A, rank + oversample, axis=1, random_state=random_state)
+
+    if n_subspace > 0:
+        Q = perform_subspace_iterations(A, Q, n_iter=n_subspace, axis=1)
 
     #Project the data matrix a into a lower dimensional subspace
     B = A.dot(Q)
@@ -85,7 +88,7 @@ def reigh(A, rank, oversample=10, n_subspace=1, random_state=None):
     return w[:rank], Q.dot(v)[:,:rank]
 
 
-def reigh_nystroem(A, rank, oversample=10, n_subspace=1, random_state=None):
+def reigh_nystroem(A, rank, oversample=10, n_subspace=2, random_state=None):
     """Randomized eigendecompostion using the Nystroem method.
 
     The quality of the approximation can be controlled via the oversampling
@@ -104,7 +107,7 @@ def reigh_nystroem(A, rank, oversample=10, n_subspace=1, random_state=None):
         Controls the oversampling of column space. Increasing this parameter
         may improve numerical accuracy.
 
-    n_subspace : integer, default: 1.
+    n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
 
@@ -133,8 +136,10 @@ def reigh_nystroem(A, rank, oversample=10, n_subspace=1, random_state=None):
     (available at `arXiv <http://arxiv.org/abs/0909.4061>`_).
     """
     # get random sketch
-    S = johnson_lindenstrauss(A, rank + oversample, n_subspace=n_subspace,
-                              axis=1, random_state=random_state)
+    S = johnson_lindenstrauss(A, rank + oversample, axis=1, random_state=random_state)
+
+    if n_subspace > 0:
+        S = perform_subspace_iterations(A, S, n_iter=n_subspace, axis=1)
 
     #Project the data matrix a into a lower dimensional subspace
     B1 = A.dot(S)

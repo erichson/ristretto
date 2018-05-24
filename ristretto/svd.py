@@ -16,7 +16,7 @@ from .qb import rqb
 from .utils import conjugate_transpose
 
 
-def rsvd(A, rank, oversample=10, n_subspace=1, sparse=False, random_state=None):
+def rsvd(A, rank, oversample=10, n_subspace=2, sparse=False, random_state=None):
     """Randomized Singular Value Decomposition.
 
     Randomized algorithm for computing the approximate low-rank singular value
@@ -43,7 +43,7 @@ def rsvd(A, rank, oversample=10, n_subspace=1, sparse=False, random_state=None):
         Controls the oversampling of column space. Increasing this parameter
         may improve numerical accuracy.
 
-    n_subspace : integer, default: 1.
+    n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
 

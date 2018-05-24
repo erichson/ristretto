@@ -9,7 +9,6 @@ from scipy import fftpack
 from scipy import sparse
 
 from . import _sketches
-from .utils import perform_subspace_iterations
 from ..utils import check_random_state, safe_sparse_dot
 
 
@@ -29,7 +28,7 @@ def randomized_uniform_sampling(A, l, axis=1, random_state=None):
     return np.take(A, idx, axis=axis)
 
 
-def johnson_lindenstrauss(A, l, n_subspace=None, axis=1, random_state=None):
+def johnson_lindenstrauss(A, l, axis=1, random_state=None):
     """
 
     Given an m x n matrix A, and an integer l, this scheme computes an m x l
@@ -50,18 +49,11 @@ def johnson_lindenstrauss(A, l, n_subspace=None, axis=1, random_state=None):
 
     # project A onto Omega
     if axis == 0:
-        Q = Omega.T.dot(A)
-    else:
-        Q = A.dot(Omega)
-
-    if n_subspace is not None:
-        Q = perform_subspace_iterations(A, Q, n_iter=n_subspace, axis=axis)
-
-    return Q
+        return Omega.T.dot(A)
+    return A.dot(Omega)
 
 
-def sparse_johnson_lindenstrauss(A, l, n_subspace=None, density=None, axis=1,
-                                 random_state=None):
+def sparse_johnson_lindenstrauss(A, l, density=None, axis=1, random_state=None):
     """
 
     Given an m x n matrix A, and an integer l, this scheme computes an m x l
@@ -89,14 +81,9 @@ def sparse_johnson_lindenstrauss(A, l, n_subspace=None, density=None, axis=1,
 
     # project A onto Omega
     if axis == 0:
-        Q = safe_sparse_dot(Omega.T, A)
-    else:
-        Q = safe_sparse_dot(A, Omega)
+        return safe_sparse_dot(Omega.T, A)
+    return safe_sparse_dot(A, Omega)
 
-    if n_subspace is not None:
-        Q = perform_subspace_iterations(A, Q, n_iter=n_subspace, axis=axis)
-
-    return Q
 
 def fast_johnson_lindenstrauss(A, l, axis=1, random_state=None):
     """
@@ -120,7 +107,7 @@ def fast_johnson_lindenstrauss(A, l, axis=1, random_state=None):
 
     if axis == 0:
         diag = diag[:, np.newaxis]
-    
+
     # discrete fourier transform of AD (or DA)
     FDA = fftpack.dct(A * diag, axis=axis, norm='ortho')
 

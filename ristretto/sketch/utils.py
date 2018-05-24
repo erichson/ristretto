@@ -13,7 +13,7 @@ def orthonormalize(A, overwrite_a=True, check_finite=False):
     return Q
 
 
-def perform_subspace_iterations(A, Q, n_iter=1, axis=0):
+def perform_subspace_iterations(A, Q, n_iter=2, axis=1):
     """perform subspace iterations on Q"""
     # TODO: can we figure out how not to transpose for row wise
     if axis == 0:

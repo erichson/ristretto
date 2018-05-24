@@ -12,10 +12,11 @@ from scipy import linalg
 from scipy import sparse
 
 from .sketch.transforms import johnson_lindenstrauss
+from .sketch.utils import perform_subspace_iterations
 from .utils import conjugate_transpose
 
 
-def rlu(A, rank, oversample=10, n_subspace=1, permute=False, random_state=None):
+def rlu(A, rank, oversample=10, n_subspace=2, permute=False, random_state=None):
     """Randomized LU Decomposition.
 
     Randomized algorithm for computing the approximate low-rank LU
@@ -41,7 +42,7 @@ def rlu(A, rank, oversample=10, n_subspace=1, permute=False, random_state=None):
         Controls the oversampling of column space. Increasing this parameter
         may improve numerical accuracy.
 
-    n_subspace : integer, default: 1.
+    n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
 
@@ -82,8 +83,10 @@ def rlu(A, rank, oversample=10, n_subspace=1, permute=False, random_state=None):
     (available at `arXiv <https://arxiv.org/abs/1310.7202>`_).
     """
     # get random sketch
-    S = johnson_lindenstrauss(A, rank + oversample, n_subspace=n_subspace,
-                              random_state=random_state)
+    S = johnson_lindenstrauss(A, rank + oversample, random_state=random_state)
+
+    if n_subspace > 0:
+        S = perform_subspace_iterations(A, S, n_iter=n_subspace, axis=1)
 
     # Compute pivoted LU decompostion of the orthonormal basis matrix Q.
     # Q = P * L * U
