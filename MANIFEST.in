@@ -1,5 +1,3 @@
-recursive-include data *
-recursive-include tutorial *
 recursive-include ristretto *.c *.pyx
 
 include LICENSE
