@@ -8,49 +8,41 @@ Randomized QB Decomposition
 import numpy as np
 from scipy import linalg
 
-from .sketch import sketch, single_pass_sketch
+from .sketch.transforms import johnson_lindenstrauss, sparse_johnson_lindenstrauss
+from .sketch.utils import perform_subspace_iterations
 from .utils import conjugate_transpose
 
 
-def rqb(A, k=None, p=10, l=None, q=1, sdist='normal', single_pass=False,
-        random_state=None):
+def rqb(A, rank, oversample=10, n_subspace=2, sparse=False, random_state=None):
     """Randomized QB Decomposition.
 
     Randomized algorithm for computing the approximate low-rank QB
-    decomposition of a rectangular `(m, n)` matrix `A`, with target rank `k << min{m, n}`.
-    The input matrix is factored as `A = Q * B`.
+    decomposition of a rectangular `(m, n)` matrix `A`, with target rank
+    `rank << min{m, n}`. The input matrix is factored as `A = Q * B`.
 
     The quality of the approximation can be controlled via the oversampling
-    parameter `p` and the parameter `q` which specifies the number of
+    parameter `oversample` and `n_subspace` which specifies the number of
     subspace iterations.
 
 
     Parameters
     ----------
     A : array_like, shape `(m, n)`.
-        Real nonnegative input matrix.
+        Input array.
 
-    k : integer, `k << min{m,n}`.
-        Target rank.
+    rank : integer
+        Target rank. Best if `rank << min{m,n}`
 
-    p : integer, default: `p=10`.
-        Parameter to control oversampling of column space.
+    oversample : integer, optional (default: 10)
+        Controls the oversampling of column space. Increasing this parameter
+        may improve numerical accuracy.
 
-    l : integer, default: `l=2*p`.
-        Parameter to control oversampling of row space. Only relevant if
-        single_pass == True.
+    n_subspace : integer, default: 2.
+        Parameter to control number of subspace iterations. Increasing this
+        parameter may improve numerical accuracy.
 
-    q : integer, default: `q=1`.
-        Parameter to control number of power (subspace) iterations. Only
-        relevant if single_pass == False.
-
-    sdist : str `{'uniform', 'normal'}`, default: `sdist='uniform'`.
-        'uniform' : Random test matrix with uniform distributed elements.
-
-        'normal' : Random test matrix with normal distributed elements.
-
-    single_pass : bool
-        If single_pass == True, perfom single pass of algorithm.
+    sparse : boolean, optional (default: False)
+        If sparse == True, perform compressed random qr decomposition.
 
     random_state : integer, RandomState instance or None, optional (default ``None``)
         If integer, random_state is the seed used by the random number generator;
@@ -60,10 +52,10 @@ def rqb(A, k=None, p=10, l=None, q=1, sdist='normal', single_pass=False,
 
     Returns
     -------
-    Q:  array_like, shape `(m, k+p)`.
+    Q:  array_like, shape `(m, rank + oversample)`.
         Orthonormal basis matrix.
 
-    B : array_like, shape `(k+p, n)`.
+    B : array_like, shape `(rank + oversample, n)`.
         Smaller matrix.
 
 
@@ -81,32 +73,16 @@ def rqb(A, k=None, p=10, l=None, q=1, sdist='normal', single_pass=False,
     and GPU architectures" (2015).
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
-    if single_pass:
-        # Form a smaller matrix
-        Omega, Psi = single_pass_sketch(
-            A, output_rank=k, column_oversample=p, row_oversample=l,
-            distribution=sdist, check_finite=True, random_state=random_state)
-
-        #Build sample matrix Y = A * Omega and W = Psi * A
-        #Note: Y should approximate the column space and W the row space of A
-        Y = A.dot(Omega)
-        W = Psi.dot(A)
-        del Omega
-
-        #Orthogonalize Y using economic QR decomposition: Y=QR
-        Q, _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True)
-        U, T = linalg.qr(Psi.dot(Q), mode='economic', check_finite=False, overwrite_a=False)
-
-        # Form a smaller matrix
-        B = linalg.solve(T, conjugate_transpose(U).dot(W), check_finite=False,
-                         overwrite_a=True, overwrite_b=True)
-
+    if sparse:
+        Q = sparse_johnson_lindenstrauss(A, rank + oversample,
+                                         random_state=random_state)
     else:
-        # get random sketch
-        Q = sketch(A, output_rank=k, n_oversample=p, n_iter=q, distribution=sdist,
-                   axis=1, check_finite=True, random_state=random_state)
+        Q = johnson_lindenstrauss(A, rank + oversample, random_state=random_state)
 
-        #Project the data matrix a into a lower dimensional subspace
-        B = conjugate_transpose(Q).dot(A)
+    if n_subspace > 0:
+        Q = perform_subspace_iterations(A, Q, n_iter=n_subspace, axis=1)
+
+    #Project the data matrix a into a lower dimensional subspace
+    B = conjugate_transpose(Q).dot(A)
 
     return Q, B

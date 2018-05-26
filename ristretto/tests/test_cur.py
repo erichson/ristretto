@@ -1,7 +1,12 @@
+from __future__ import division
+
 import numpy as np
+from scipy import linalg
 
 from ristretto.cur import cur
 from ristretto.cur import rcur
+
+from .utils import relative_error
 
 atol_float32 = 1e-4
 atol_float64 = 1e-8
@@ -12,19 +17,18 @@ atol_float64 = 1e-8
 # =============================================================================
 def test_cur():
     m, k = 100, 10
-    A = np.array(np.random.randn(m, k), np.float64)
-    A = A.dot(A.T)
-    A = A[:,0:50]
+    A = np.random.randn(m, k).astype(np.float64)
+    A = A.dot(A.T)[:, :50]
 
     # index_set = False
-    C, U, R = cur(A, k=k+2, index_set=False)
-    relative_error = (np.linalg.norm(A - C.dot(U).dot(R)) / np.linalg.norm(A))
-    assert relative_error < 1e-4
+    C, U, R = cur(A, rank=k+2, index_set=False)
+    A_cur = C.dot(U).dot(R)
+    assert relative_error(A, A_cur) < atol_float32
 
     # index_set = True
-    C, U, R = cur(A, k=k+2, index_set=True)
-    relative_error = (np.linalg.norm(A - A[:,C].dot(U).dot(A[R,:])) / np.linalg.norm(A))
-    assert relative_error < 1e-4
+    C, U, R = cur(A, rank=k+2, index_set=True)
+    A_cur = A[:, C].dot(U).dot(A[R])
+    assert relative_error(A, A_cur) < atol_float32
 
 
 # =============================================================================
@@ -32,16 +36,15 @@ def test_cur():
 # =============================================================================
 def test_rcur():
     m, k = 100, 10
-    A = np.array(np.random.randn(m, k), np.float64)
-    A = A.dot(A.T)
-    A = A[:,0:50]
+    A = np.random.randn(m, k).astype(np.float64)
+    A = A.dot(A.T)[:, :50]
 
     # index_set = False
-    C, U, R = rcur(A, k=k+2, index_set=False)
-    relative_error = (np.linalg.norm(A - C.dot(U).dot(R)) / np.linalg.norm(A))
-    assert relative_error < 1e-4
+    C, U, R = rcur(A, k+2, index_set=False)
+    A_cur = C.dot(U).dot(R)
+    assert relative_error(A, A_cur) < atol_float32
 
     # index_set = True
-    C, U, R = rcur(A, k=k+2, index_set=True)
-    relative_error = (np.linalg.norm(A - A[:,C].dot(U).dot(A[R,:])) / np.linalg.norm(A))
-    assert relative_error < 1e-4
+    C, U, R = rcur(A, k+2, index_set=True)
+    A_cur = A[:, C].dot(U).dot(A[R])
+    assert relative_error(A, A_cur) < atol_float32

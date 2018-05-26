@@ -6,85 +6,53 @@ from ristretto.dmd import rdmd
 atol_float32 = 1e-4
 atol_float64 = 1e-8
 
+def get_A():
+    # Define time and space discretizations
+    x = np.linspace( -10, 10, 100)
+    t = np.linspace(0, 8*np.pi , 60)
+    X, T = np.meshgrid(x, t)
+
+    # Create two patio-temporal patterns
+    F1 = 0.5 * np.cos(X) * (1. + 0. * T)
+    F2 = ((1./np.cosh(X)) * np.tanh(X)) * (2 * np.exp(1j * 2.8 * T))
+
+    return np.array((F1 + F2).T, order='C')
+
+
+def A_tilde(Fmodes, b, V):
+    return Fmodes.dot(np.diag(b).dot(V))
 
 # =============================================================================
 # dmd function
 # =============================================================================
 def test_dmd():
-    # Define time and space discretizations
-    x=np.linspace( -10, 10, 100)
-    t=np.linspace(0, 8*np.pi , 60)
-    dt=t[2]-t[1]
-    X, T = np.meshgrid(x,t)
-    # Create two patio-temporal patterns
-    F1 = 0.5* np.cos(X)*(1.+0.* T)
-    F2 = ( (1./np.cosh(X)) * np.tanh(X)) *(2.*np.exp(1j*2.8*T))
-    A = np.array((F1+F2).T, order='C')
+    A = get_A()
 
-    Fmodes, b, V, omega = dmd(A, k=2, modes='standard',
+    # ------------------------------------------------------------------------
+    # tests mode == standard
+    Fmodes, b, V, omega = dmd(A, rank=2, modes='standard',
                               return_amplitudes=True, return_vandermonde=True)
-    Atilde = Fmodes.dot( np.dot(np.diag(b), V))
-    assert np.allclose(A, Atilde, atol_float64)
+    assert np.allclose(A, A_tilde(Fmodes, b, V), atol_float64)
 
-    Fmodes, b, V, omega = dmd(A, modes='standard', return_amplitudes=True,
-                              return_vandermonde=True)
-    Atilde = Fmodes.dot( np.dot(np.diag(b), V))
-    assert np.allclose(A, Atilde, atol_float64)
+    # ------------------------------------------------------------------------
+    # tests mode == exact, rank == A.shape[1]
+    Fmodes, b, V, omega = dmd(A, rank=A.shape[1], modes='exact',
+                              return_amplitudes=True, return_vandermonde=True)
+    assert np.allclose(A, A_tilde(Fmodes, b, V), atol_float64)
 
-    Fmodes, b, V, omega = dmd(A, modes='exact', return_amplitudes=True,
-                              return_vandermonde=True)
-    Atilde = Fmodes.dot( np.dot(np.diag(b), V))
-    assert np.allclose(A, Atilde, atol_float64)
-
+    # ------------------------------------------------------------------------
+    # tests mode == exact_scaled, rank == None
     Fmodes, b, V, omega = dmd(A, modes='exact_scaled', return_amplitudes=True,
                               return_vandermonde=True)
-    Atilde = Fmodes.dot( np.dot(np.diag(b), V))
-    assert np.allclose(A, Atilde, atol_float64)
+    assert np.allclose(A, A_tilde(Fmodes, b, V), atol_float64)
 
 
 # =============================================================================
 # rdmd function
 # =============================================================================
 def test_rdmd():
-    # Define time and space discretizations
-    x=np.linspace( -10, 10, 100)
-    t=np.linspace(0, 8*np.pi , 60)
-    dt=t[2]-t[1]
-    X, T = np.meshgrid(x,t)
-    # Create two patio-temporal patterns
-    F1 = 0.5* np.cos(X)*(1.+0.* T)
-    F2 = ( (1./np.cosh(X)) * np.tanh(X)) *(2.*np.exp(1j*2.8*T))
-    A = np.array((F1+F2).T, order='C')
+    A = get_A()
 
-    Fmodes, b, V, omega = rdmd(A, k=2, p=10, q=2, sdist='uniform',
+    Fmodes, b, V, omega = rdmd(A, 2, oversample=10, n_subspace=2,
                                return_amplitudes=True, return_vandermonde=True)
-    Atilde = Fmodes.dot( np.dot(np.diag(b), V))
-    assert np.allclose(A, Atilde, atol_float64)
-
-    Fmodes, b, V, omega = rdmd(A, k=2, p=10, q=2, sdist='normal',
-                               return_amplitudes=True, return_vandermonde=True)
-    Atilde = Fmodes.dot( np.dot(np.diag(b), V))
-    assert np.allclose(A, Atilde, atol_float64)
-
-
-def test_rdmd_single_pass():
-    # Define time and space discretizations
-    x=np.linspace( -10, 10, 100)
-    t=np.linspace(0, 8*np.pi , 60)
-    dt=t[2]-t[1]
-    X, T = np.meshgrid(x,t)
-
-    # Create two patio-temporal patterns
-    F1 = 0.5* np.cos(X)*(1.+0.* T)
-    F2 = ( (1./np.cosh(X)) * np.tanh(X)) *(2.*np.exp(1j*2.8*T))
-    A = np.array((F1+F2).T, order='C')
-
-    Fmodes, b, V, omega = rdmd(A, k=2, p=10, l=20, sdist='uniform', single_pass=True,
-                               return_amplitudes=True, return_vandermonde=True)
-    Atilde = Fmodes.dot( np.dot(np.diag(b), V))
-    assert np.allclose(A, Atilde, atol_float64)
-
-    Fmodes, b, V, omega = rdmd(A, k=2, p=10, l=20, sdist='orthogonal', single_pass=True,
-                               return_amplitudes=True, return_vandermonde=True)
-    Atilde = Fmodes.dot( np.dot(np.diag(b), V))
-    assert np.allclose(A, Atilde, atol_float64)
+    assert np.allclose(A, A_tilde(Fmodes, b, V), atol_float64)

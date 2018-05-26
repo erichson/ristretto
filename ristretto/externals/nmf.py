@@ -109,7 +109,7 @@ def _initialize_nmf(X, n_components, init=None, eps=1e-6,
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # NOTE: use our randomized_svd instead of scikit-learn
     #U, S, V = randomized_svd(X, n_components, random_state=random_state)
-    U, S, V = rsvd(X, n_components, p=20, q=2)
+    U, S, V = rsvd(X, n_components)
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     W, H = np.zeros(U.shape), np.zeros(V.shape)
 

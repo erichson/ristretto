@@ -11,15 +11,12 @@ import numpy as np
 from scipy import linalg
 
 from .qb import rqb
-from .sketch import _get_distribution_func
-from .utils import check_random_state, conjugate_transpose
+from .utils import conjugate_transpose
 
-_VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
-_VALID_SDISTS = ('uniform', 'normal')
 _VALID_MODES = ('row', 'column')
 
 
-def interp_decomp(A, k=None, mode='column', index_set=False):
+def interp_decomp(A, rank, mode='column', index_set=False):
     """Interpolative decomposition (ID).
 
     Algorithm for computing the low-rank ID
@@ -27,7 +24,7 @@ def interp_decomp(A, k=None, mode='column', index_set=False):
     Input matrix is factored as `A = C * V`, using the column pivoted QR decomposition.
     The factor matrix `C` is formed of a subset of columns of `A`,
     also called the partial column skeleton. The factor matrix `V` contains
-    a `(k, k)` identity matrix as a submatrix, and is well-conditioned.
+    a `(rank, rank)` identity matrix as a submatrix, and is well-conditioned.
 
     If `mode='row'`, then the input matrix is factored as `A = Z * R`, using the
     row pivoted QR decomposition. The factor matrix `R` is now formed as
@@ -36,10 +33,10 @@ def interp_decomp(A, k=None, mode='column', index_set=False):
     Parameters
     ----------
     A : array_like, shape `(m, n)`.
-        Input matrix.
+        Input array.
 
-    k : integer, `k << min{m,n}`.
-        Target rank.
+    rank : integer
+        Target rank. Best if `rank << min{m,n}`
 
     mode: str `{'column', 'row'}`, default: `mode='column'`.
         'column' : ID using column pivoted QR.
@@ -48,20 +45,21 @@ def interp_decomp(A, k=None, mode='column', index_set=False):
     index_set: str `{'True', 'False'}`, default: `index_set='False'`.
         'True' : Return column/row index set instead of `C` or `R`.
 
+
     Returns
     -------
     If `mode='column'`:
-        C:  array_like, shape `(m, k)`.
+        C:  array_like, shape `(m, rank)`.
             Partial column skeleton.
 
-        V : array_like, shape `(k, n)`.
+        V : array_like, shape `(rank, n)`.
             Well-conditioned matrix.
 
     If `mode='row'`:
-        Z:  array_like, shape `(m, k)`.
+        Z:  array_like, shape `(m, rank)`.
             Well-conditioned matrix.
 
-        R : array_like, shape `(k, n)`.
+        R : array_like, shape `(rank, n)`.
             Partial row skeleton.
 
     References
@@ -80,44 +78,36 @@ def interp_decomp(A, k=None, mode='column', index_set=False):
     A = np.asarray_chkfinite(A)
     if mode=='row':
         A = conjugate_transpose(A)
+
     m, n = A.shape
-
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
-    if k is None:
-        # default
-        k = min(m,n)
-
-    if k < 1 or k > min(m, n):
-        raise ValueError("Target rank k must be >= 1 or < min(m, n), not %d" % k)
+    if rank < 1 or rank > min(m, n):
+        raise ValueError("Target rank rank must be >= 1 or < min(m, n), not %d" % rank)
 
     #Pivoted QR decomposition
     Q, R, P = linalg.qr(A, mode='economic', overwrite_a=False, pivoting=True,
                         check_finite=False)
 
     # Select column subset
-    C = A[:, P[:k]]
+    C = A[:, P[:rank]]
 
     # Compute V
-    T =  linalg.pinv2(R[:k, :k]).dot(R[:k, k:n])
-    V = np.bmat([[np.eye(k), T]])
+    T =  linalg.pinv2(R[:rank, :rank]).dot(R[:rank, rank:n])
+    V = np.bmat([[np.eye(rank), T]])
     V = V[:, np.argsort(P)]
 
     # Return ID
     if mode == 'column':
         if index_set:
-            return P[:k], V
+            return P[:rank], V
         return C, V
     # mode == row
     elif index_set:
-        return conjugate_transpose(V), P[:k]
+        return conjugate_transpose(V), P[:rank]
 
     return conjugate_transpose(V), conjugate_transpose(C)
 
 
-def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal',
+def rinterp_decomp(A, rank, oversample=10, n_subspace=2, mode='column',
                    index_set=False, random_state=None):
     """Randomized interpolative decomposition (rID).
 
@@ -125,7 +115,7 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal',
     decomposition of a rectangular `(m, n)` matrix `A`, with target rank `k << min{m, n}`.
     The input matrix is factored as `A = C * V`. The factor matrix `C`is formed
     of a subset of columns of `A`, also called the partial column skeleton.
-    The factor matrix `V`contains a `(k, k)` identity matrix as a submatrix,
+    The factor matrix `V`contains a `(rank, rank)` identity matrix as a submatrix,
     and is well-conditioned.
 
     If `mode='row'`, then the input matrix is factored as `A = Z * R`, using the
@@ -133,32 +123,29 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal',
     a subset of rows of `A`, also called the partial row skeleton.
 
     The quality of the approximation can be controlled via the oversampling
-    parameter `p` and the parameter `q` which specifies the number of
+    parameter `oversample` and `n_subspace` which specifies the number of
     subspace iterations.
 
 
     Parameters
     ----------
     A : array_like, shape `(m, n)`.
-        Input matrix.
+        Input array.
 
-    k : integer, `k << min{m,n}`.
-        Target rank.
+    rank : integer
+        Target rank. Best if `rank << min{m,n}`
+
+    oversample : integer, optional (default: 10)
+        Controls the oversampling of column space. Increasing this parameter
+        may improve numerical accuracy.
+
+    n_subspace : integer, default: 2.
+        Parameter to control number of subspace iterations. Increasing this
+        parameter may improve numerical accuracy.
 
     mode: str `{'column', 'row'}`, default: `mode='column'`.
         'column' : Column ID.
         'row' : Row ID.
-
-    p : integer, default: `p=10`.
-        Parameter to control oversampling.
-
-    q : integer, default: `q=1`.
-        Parameter to control number of power (subspace) iterations.
-
-    sdist : str `{'uniform', 'normal'}`, default: `sdist='uniform'`.
-        'uniform' : Random test matrix with uniform distributed elements.
-
-        'normal' : Random test matrix with normal distributed elements.
 
     index_set: str `{'True', 'False'}`, default: `index_set='False'`.
         'True' : Return column/row index set instead of `C` or `R`.
@@ -168,170 +155,22 @@ def rinterp_decomp(A, k=None, mode='column', p=10, q=1, sdist='normal',
         If RandomState instance, random_state is the random number generator;
         If None, the random number generator is the RandomState instance used by np.random.
 
-    Returns
-    -------
-    If `mode='column'`:
-        C:  array_like, shape `(m, k)`.
-            Partial column skeleton.
-
-        V : array_like, shape `(k, n)`.
-            Well-conditioned matrix.
-
-    If `mode='row'`:
-        Z:  array_like, shape `(m, k)`.
-            Well-conditioned matrix.
-
-        R : array_like, shape `(k, n)`.
-            Partial row skeleton.
-
-    References
-    ----------
-    S. Voronin and P.Martinsson.
-    "RSVDPACK: Subroutines for computing partial singular value
-    decompositions via randomized sampling on single core, multi core,
-    and GPU architectures" (2015).
-    (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
-    """
-    random_state=check_random_state(random_state)
-
-    # converts A to array, raise ValueError if A has inf or nan
-    A = np.asarray_chkfinite(A)
-
-    if mode=='row':
-        A = conjugate_transpose(A)
-
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
-    if mode not in _VALID_MODES:
-        raise ValueError('mode must be one of %s, not %s'
-                         % (' '.join(_VALID_MODES), mode))
-
-    if sdist not in _VALID_SDISTS:
-        raise ValueError('sdists must be one of %s, not %s'
-                         % (' '.join(_VALID_SDISTS), sdist))
-
-    m, n = A.shape
-    if k is None:
-        # default
-        k = min(m, n)
-
-    if k < 1 or k > min(m, n):
-        raise ValueError("Target rank k must be >= 1 or < min(m, n), not %d" % k)
-
-    # distribution to draw random samples
-    sdist_func = _get_distribution_func(sdist, random_state)
-
-    #Generate a random test matrix Omega
-    Omega = sdist_func(size=(k+p, m)).astype(A.dtype)
-
-    if A.dtype == np.complexfloating:
-        real_type = np.float32 if A.dtype == np.complex64 else np.float64
-        Omega += 1j * sdist_func(size=(k+p, m)).astype(real_type)
-
-    #Build sample matrix Y : Y = A * Omega (Y approximates range of A)
-    Y = Omega.dot(A)
-    del Omega
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #Orthogonalize Y using economic QR decomposition: Y=QR
-    #If q > 0 perfrom q subspace iterations
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    for _ in range(q):
-        Y, _ = linalg.qr(conjugate_transpose(Y), mode='economic',
-        check_finite=False, overwrite_a=True)
-        Z, _ = linalg.qr(A.dot(Y), mode='economic', check_finite=False, overwrite_a=True)
-        Y = conjugate_transpose(Z).dot(A)
-
-    del Z
-
-    # Deterministic ID
-    J, V = interp_decomp(Y, k=k, mode='column', index_set=True)
-    J = J[0:k]
-
-    if mode == 'column':
-        if index_set:
-            return J, V
-        return A[:,J], V
-    # mode == 'row'
-    elif index_set:
-        return conjugate_transpose(V), J
-    return conjugate_transpose(V), conjugate_transpose(A[:,J])
-
-
-def rinterp_decomp_qb(A, k=None, mode='column', p=10, q=1, sdist='normal',
-                      index_set=False, random_state=None):
-    r"""Randomized interpolative decomposition (rID).
-
-    Algorithm for computing the approximate low-rank ID
-    decomposition of a rectangular `(m, n)` matrix `A`, with target rank `k << min{m, n}`.
-    The input matrix is factored as `A = C * V`. The factor matrix $\mathbf{C}$ is formed
-    of a subset of columns of $\mathbf{A}$, also called the partial column skeleton.
-    The factor matrix $\mathbf{V}$ contains a $k\times k$ identity matrix as a submatrix,
-    and is well-conditioned.
-
-    If `mode='row'`, then the input matrix is factored as `A = Z * R`, using the
-    row pivoted QR decomposition. The factor matrix $\mathbf{C}$ is now formed as
-    a subset of rows of $\mathbf{A}$, also called the partial row skeleton.
-
-    The quality of the approximation can be controlled via the oversampling
-    parameter `p` and the parameter `q` which specifies the number of
-    subspace iterations.
-
-
-    Parameters
-    ----------
-    A : array_like, shape `(m, n)`.
-        Input matrix.
-
-    k : integer, `k << min{m,n}`.
-        Target rank.
-
-    mode: str `{'column', 'row'}`, default: `mode='column'`.
-        'column' : Column ID.
-        'row' : Row ID.
-
-    p : integer, default: `p=10`.
-        Parameter to control oversampling.
-
-    q : integer, default: `q=1`.
-        Parameter to control number of power (subspace) iterations.
-
-    sdist : str `{'uniform', 'normal'}`, default: `sdist='uniform'`.
-        'uniform' : Random test matrix with uniform distributed elements.
-
-        'normal' : Random test matrix with normal distributed elements.
-
-    index_set: str `{'True', 'False'}`, default: `index_set='False'`.
-        'True' : Return column/row index set.
-
-    random_state : integer, RandomState instance or None, optional (default ``None``)
-        If integer, random_state is the seed used by the random number generator;
-        If RandomState instance, random_state is the random number generator;
-        If None, the random number generator is the RandomState instance used by np.random.
-
 
     Returns
     -------
     If `mode='column'`:
-        C:  array_like, shape `(m, k)`.
+        C:  array_like, shape `(m, rank)`.
             Partial column skeleton.
 
-        V : array_like, shape `(k, n)`.
+        V : array_like, shape `(rank, n)`.
             Well-conditioned matrix.
 
     If `mode='row'`:
-        Z:  array_like, shape `(m, k)`.
+        Z:  array_like, shape `(m, rank)`.
             Well-conditioned matrix.
 
-        R : array_like, shape `(k, n)`.
+        R : array_like, shape `(rank, n)`.
             Partial row skeleton.
-
-
-    J : array_like, shape `(k, n)`.
-        Column/row index set.
-
 
     References
     ----------
@@ -347,22 +186,22 @@ def rinterp_decomp_qb(A, k=None, mode='column', p=10, q=1, sdist='normal',
 
     # converts A to array, raise ValueError if A has inf or nan
     A = np.asarray_chkfinite(A)
-    if mode=='row':
+    if mode == 'row':
         A = conjugate_transpose(A)
 
     # compute QB factorization
-    Q, B = rqb(A, k=k, p=p, q=q, sdist=sdist, random_state=random_state)
+    Q, B = rqb(A, rank, oversample=oversample, n_subspace=n_subspace, random_state=random_state)
 
     # Deterministic ID
-    J, V = interp_decomp(B, k=k, mode='column', index_set=True)
-    J = J[:k]
+    J, V = interp_decomp(B, rank, mode='column', index_set=True)
+    J = J[:rank]
 
     # Return ID
-    if mode=='column':
+    if mode == 'column':
         if index_set:
             return J, V
-        return A[:,J], V
+        return A[:, J], V
     # mode == 'row'
     elif index_set:
         return conjugate_transpose(V), J
-    return conjugate_transpose(V), conjugate_transpose(A[:,J])
+    return conjugate_transpose(V), conjugate_transpose(A[:, J])
