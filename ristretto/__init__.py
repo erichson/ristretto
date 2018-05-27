@@ -16,15 +16,5 @@ import sys
 # see https://www.python.org/dev/peps/pep-0440/
 __version__ = '0.1.2'
 
-try:
-    __RISTRETTO_SETUP__
-except NameError:
-    __RISTRETTO_SETUP__ = False
-
-if __RISTRETTO_SETUP__:
-    # not yet importing rest of ristretto during build process, as it may not
-    # yet be completed
-    sys.stderr.write('Partial import of ristretto during the build process.\n')
-else:
-    __all__ = ['cur', 'dmd', 'eigen', 'interp_decomp', 'lu', 'nmf', 'pca',
-               'qb', 'sketch', 'svd', 'utils']
+__all__ = ['cur', 'dmd', 'eigen', 'interp_decomp', 'lu', 'nmf', 'pca',
+           'qb', 'sketch', 'svd', 'utils']

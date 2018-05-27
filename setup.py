@@ -4,7 +4,10 @@
 #          Joseph Knox
 # License: GNU General Public License v3.0
 from __future__ import print_function
+import ast
+import io
 import os
+import re
 import sys
 import shutil
 from setuptools import setup, Extension
@@ -33,15 +36,17 @@ else:
     import builtins
 
 
-# This is a bit (!) hackish: we are setting a global variable so that the main
-# ristretto __init__ can detect if it is being loaded by the setup routine, to
-# avoid attempting to load components that aren't built yet
-builtins.__RISTRETTO_SETUP__ = True
+def get_version():
+    here = os.path.abspath(os.path.dirname(__file__))
+    init_file = os.path.join(here, "ristretto/__init__.py")
+    _version_re = re.compile(r"__version__\s+=\s+(?P<version>.*)")
+    with io.open(init_file, "r", encoding="utf8") as f:
+        match = _version_re.search(f.read())
+        version = match.group("version") if match is not None else '"unknown"'
+    return str(ast.literal_eval(version))
 
-# import restricted version of ristretto to get version
-import ristretto
 
-VERSION = ristretto.__version__
+VERSION = get_version()
 
 SCIPY_MIN_VERSION = '0.0.13'
 NUMPY_MIN_VERSION = '1.8.2'
@@ -101,7 +106,7 @@ extensions = [
 ]
 ext_modules = cythonize_extensions(extensions)
 
-cmdclass = {'clean' : CleanCommand}
+cmdclass = {'clean': CleanCommand}
 
 extra_setuptools_args = dict(
     zip_safe=False,
