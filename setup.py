@@ -38,11 +38,11 @@ else:
 
 def get_version():
     here = os.path.abspath(os.path.dirname(__file__))
-    init_file = os.path.join(here, "ristretto/__init__.py")
-    _version_re = re.compile(r"__version__\s+=\s+(?P<version>.*)")
-    with io.open(init_file, "r", encoding="utf8") as f:
+    init_file = os.path.join(here, 'ristretto/__init__.py')
+    _version_re = re.compile(r'__version__\s+=\s+(?P<version>.*)')
+    with io.open(init_file, 'r', encoding='utf8') as f:
         match = _version_re.search(f.read())
-        version = match.group("version") if match is not None else '"unknown"'
+        version = match.group('version') if match is not None else '"unknown"'
     return str(ast.literal_eval(version))
 
 
@@ -130,6 +130,7 @@ def setup_package():
                     version=VERSION,
                     keywords=KEYWORDS,
                     long_description=LONG_DESRIPTION,
+                    long_description_content_type='text/markdown',
                     classifiers=[
                         'Development Status :: 4 - Beta',
                         'Intended Audience :: Science/Research',
