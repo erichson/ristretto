@@ -6,3 +6,4 @@ include = */ristretto/*
 [report]
 omit =
 	*/setup.py
+	*/ristretto/externals/*
