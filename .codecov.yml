@@ -1,0 +1,15 @@
+comment: false
+
+coverage:
+  status:
+    project:
+      default:
+        # commits to master should not decrease coverage by > 1%
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        # tolerate slight coverge diff on personal repos to limit
+        # noisy coverage status badges.
+        target: auto
+        threshold: 1%
