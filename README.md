@@ -4,6 +4,7 @@ The idea of randomized low-rank matrix approximations is to restrict the high-di
 
 
 # ristretto: Package Overview [![Build Status](https://travis-ci.org/erichson/ristretto.svg?branch=master)](https://travis-ci.org/erichson/ristretto)
+[![codecov](https://codecov.io/gh/erichson/ristretto/branch/master/graph/badge.svg)](https://codecov.io/gh/erichson/ristretto)
 *************************************************
 
 The Python software library ristretto provides a collection of randomized matrix algorithms which can be used for dimension reduction. Overview of implemented routines:
@@ -17,12 +18,12 @@ The Python software library ristretto provides a collection of randomized matrix
 # Get started
 ******************
 
-### Quick Installation via PIP 
+### Quick Installation via PIP
 To install the latest stable release of ristretto run:
 
 ``pip install ristretto``
 
-### Obtaining the Latest Software via GIT 
+### Obtaining the Latest Software via GIT
 To get the latest stable and development versions of ristretto run:
 
 ``git clone https://github.com/erichson/ristretto``
@@ -42,4 +43,3 @@ After successfully installing the ristretto library, the unit tests can be run b
 * [N. Benjamin Erichson, et al. `Randomized Matrix Decompositions using R.' (2016)](http://arxiv.org/abs/1608.02148)
 * [Sergey Voronin, Per-Gunnar Martinsson. `RSVDPACK: Subroutines for computing partial singular value decompositions via randomized sampling on single core, multi core, and GPU architectures.' (2015)](https://arxiv.org/abs/1502.05366)
 * [Nathan Halko, et al. Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions.' (2011)](https://arxiv.org/abs/0909.4061)
-
