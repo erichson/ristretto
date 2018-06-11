@@ -22,9 +22,13 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy setuptools nose cython
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy setuptools nose cython coverage
   - source activate test-environment
+  - pip install --user codecov
   - python setup.py install
 
 script:
   - python setup.py test
+    # do not fail build if upload to codecov fails
+  - nosetests --with-coverage --cover-package=ristretto
+  - codecov || echo "codecov upload failed"
