@@ -10,7 +10,7 @@ import os
 import re
 import sys
 import shutil
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from distutils.command.clean import clean as Clean
 from distutils.version import LooseVersion
 
@@ -141,6 +141,7 @@ def setup_package():
                     test_suite='nose.collector',
                     cmdclass=cmdclass,
                     ext_modules=ext_modules,
+                    packages=find_packages(exclude=['tests']),
                     **extra_setuptools_args)
 
     setup(**metadata)
