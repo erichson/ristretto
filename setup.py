@@ -10,7 +10,7 @@ import os
 import re
 import sys
 import shutil
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from distutils.command.clean import clean as Clean
 from distutils.version import LooseVersion
 
@@ -85,7 +85,7 @@ class CleanCommand(Clean):
 # https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/_build_utils/__init__.py#L63
 def cythonize_extensions(extensions):
     """Tweaks for building extensions between release and development mode."""
-    message = ('Please install cython with a version >= {0} in order '
+    message = ('\nPlease install cython with a version >= {0} in order '
                'to build a ristretto development version.').format(
                    CYTHON_MIN_VERSION)
     try:
@@ -94,9 +94,9 @@ def cythonize_extensions(extensions):
             message += ' Your version of Cython was {0}.'.format(Cython.__version__)
             raise ValueError(message)
         from Cython.Build import cythonize
-    except ImportError as exc:
-        exc.args += (message,)
-        raise
+    except (ModuleNotFoundError, ImportError) as exc:
+        args = exc.args[0] + message
+        raise type(exc)(args)
 
     return cythonize(extensions)
 
@@ -111,12 +111,10 @@ cmdclass = {'clean': CleanCommand}
 extra_setuptools_args = dict(
     zip_safe=False,
     include_package_data=True,
-    extras_require={
-        'alldeps': (
-            'numpy >= {0}'.format(NUMPY_MIN_VERSION),
-            'scipy >= {0}'.format(SCIPY_MIN_VERSION),
-        ),
-    },
+    install_requires=[
+        'numpy >= {0}'.format(NUMPY_MIN_VERSION),
+        'scipy >= {0}'.format(SCIPY_MIN_VERSION),
+        ]
 )
 
 
@@ -143,6 +141,7 @@ def setup_package():
                     test_suite='nose.collector',
                     cmdclass=cmdclass,
                     ext_modules=ext_modules,
+                    packages=find_packages(exclude=['tests']),
                     **extra_setuptools_args)
 
     setup(**metadata)
