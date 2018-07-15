@@ -16,16 +16,16 @@ from .externals.nmf import _initialize_nmf
 _VALID_DTYPES = (np.float32, np.float64)
 
 
-def nmf(A, k, init='nndsvd', shuffle=False,
+def nmf(A, rank, init='nndsvd', shuffle=False,
         l2_reg_H=0.0, l2_reg_W=0.0, l1_reg_H=0.0, l1_reg_W=0.0,
         tol=1e-5, maxiter=200, random_state=None, verbose=False):
     """Nonnegative Matrix Factorization.
 
     Hierarchical alternating least squares algorithm
     for computing the approximate low-rank nonnegative matrix factorization of
-    a rectangular `(m, n)` matrix `A`. Given the target rank `k << min{m,n}`,
+    a rectangular `(m, n)` matrix `A`. Given the target rank `rank << min{m,n}`,
     the input matrix `A` is factored as `A = W H`. The nonnegative factor
-    matrices `W` and `H` are of dimension `(m, k)` and `(k, n)`, respectively.
+    matrices `W` and `H` are of dimension `(m, rank)` and `(rank, n)`, respectively.
 
 
     Parameters
@@ -33,7 +33,7 @@ def nmf(A, k, init='nndsvd', shuffle=False,
     A : array_like, shape `(m, n)`.
         Real nonnegative input matrix.
 
-    k : integer, `k << min{m,n}`.
+    rank : integer, `rank << min{m,n}`.
         Target rank.
 
     init :  'random' | 'nndsvd' | 'nndsvda' | 'nndsvdar'
@@ -83,10 +83,10 @@ def nmf(A, k, init='nndsvd', shuffle=False,
 
     Returns
     -------
-    W:  array_like, `(m, k)`.
+    W:  array_like, `(m, rank)`.
         Solution to the non-negative least squares problem.
 
-    H : array_like, `(k, n)`.
+    H : array_like, `(rank, n)`.
         Solution to the non-negative least squares problem.
 
 
@@ -116,7 +116,7 @@ def nmf(A, k, init='nndsvd', shuffle=False,
     >>> import numpy as np
     >>> X = np.array([[1,1], [2, 1], [3, 1.2], [4, 1], [5, 0.8], [6, 1]])
     >>> import ristretto as ro
-    >>> W, H = ro.rnm(X, k=2, p=0)
+    >>> W, H = ro.nmf(X, rank=2)
     """
     # converts A to array, raise ValueError if A has inf or nan
     A = np.asarray_chkfinite(A)
@@ -136,7 +136,7 @@ def nmf(A, k, init='nndsvd', shuffle=False,
     # Initialization methods for factor matrices W and H
     # 'normal': nonnegative standard normal random init
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    W, H = _initialize_nmf(A, k, init=init, eps=1e-6, random_state=rns)
+    W, H = _initialize_nmf(A, rank, init=init, eps=1e-6, random_state=rns)
     Ht = np.array(H.T, order='C')
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -149,20 +149,20 @@ def nmf(A, k, init='nndsvd', shuffle=False,
 
         # Update factor matrix H with regularization
         WtW = W.T.dot(W)
-        WtW.flat[::k + 1] += l2_reg_H # adds l2_reg only on the diagonal
+        WtW.flat[::rank + 1] += l2_reg_H # adds l2_reg only on the diagonal
         AtW = A.T.dot(W) - l1_reg_H
 
         # compute violation update
-        permutation = rns.permutation(k) if shuffle else np.arange(k)
+        permutation = rns.permutation(rank) if shuffle else np.arange(rank)
         violation += _fhals_update_shuffle(Ht, WtW, AtW, permutation)
 
         # Update factor matrix W with regularization
         HHt = Ht.T.dot(Ht)
-        HHt.flat[::k + 1] += l2_reg_W # adds l2_reg only on the diagonal
+        HHt.flat[::rank + 1] += l2_reg_W # adds l2_reg only on the diagonal
         AHt = A.dot(Ht) - l1_reg_W
 
         # compute violation update
-        permutation = rns.permutation(k) if shuffle else np.arange(k)
+        permutation = rns.permutation(rank) if shuffle else np.arange(rank)
         violation += _fhals_update_shuffle(W, HHt, AHt, permutation)
 
         # Compute stopping condition.
@@ -184,7 +184,7 @@ def nmf(A, k, init='nndsvd', shuffle=False,
     return W, Ht.T
 
 
-def rnmf(A, k, p=20, q=2, init='nndsvd', shuffle=False,
+def rnmf(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=False,
          l2_reg_H=0.0, l2_reg_W=0.0, l1_reg_H=0.0, l1_reg_W=0.0,
          tol=1e-5, maxiter=200, random_state=None, verbose=False):
     """
@@ -192,12 +192,12 @@ def rnmf(A, k, p=20, q=2, init='nndsvd', shuffle=False,
 
     Randomized hierarchical alternating least squares algorithm
     for computing the approximate low-rank nonnegative matrix factorization of
-    a rectangular `(m, n)` matrix `A`. Given the target rank `k << min{m,n}`,
+    a rectangular `(m, n)` matrix `A`. Given the target rank `rank << min{m,n}`,
     the input matrix `A` is factored as `A = W H`. The nonnegative factor
-    matrices `W` and `H` are of dimension `(m, k)` and `(k, n)`, respectively.
+    matrices `W` and `H` are of dimension `(m, rank)` and `(rank, n)`, respectively.
 
     The quality of the approximation can be controlled via the oversampling
-    parameter `p` and the parameter `q` which specifies the number of
+    parameter `oversample` and the parameter `n_subspace` which specifies the number of
     subspace iterations.
 
 
@@ -206,14 +206,16 @@ def rnmf(A, k, p=20, q=2, init='nndsvd', shuffle=False,
     A : array_like, shape `(m, n)`.
         Real nonnegative input matrix.
 
-    k : integer, `k << min{m,n}`.
+    rank : integer, `rank << min{m,n}`.
         Target rank, i.e., number of components to extract from the data
 
-    p : integer, default: `p=20`.
-        Parameter to control oversampling.
+    oversample : integer, optional (default: 10)
+        Controls the oversampling of column space. Increasing this parameter
+        may improve numerical accuracy.
 
-    q : integer, default: `q=2`.
-        Parameter to control number of power (subspace) iterations.
+    n_subspace : integer, default: 2.
+        Parameter to control number of subspace iterations. Increasing this
+        parameter may improve numerical accuracy.
 
     init :  'random' | 'nndsvd' | 'nndsvda' | 'nndsvdar'
         Method used to initialize the procedure. Default: 'nndsvd'.
@@ -262,10 +264,10 @@ def rnmf(A, k, p=20, q=2, init='nndsvd', shuffle=False,
 
     Returns
     -------
-    W:  array_like, `(m, k)`.
+    W:  array_like, `(m, rank)`.
         Solution to the non-negative least squares problem.
 
-    H : array_like, `(k, n)`.
+    H : array_like, `(rank, n)`.
         Solution to the non-negative least squares problem.
 
 
@@ -298,7 +300,7 @@ def rnmf(A, k, p=20, q=2, init='nndsvd', shuffle=False,
     >>> import numpy as np
     >>> X = np.array([[1,1], [2, 1], [3, 1.2], [4, 1], [5, 0.8], [6, 1]])
     >>> import ristretto as ro
-    >>> W, H = ro.rnmf(X, k=2, p=0)
+    >>> W, H = ro.rnmf(X, rank=2, oversample=0)
     """
     # converts A to array, raise ValueError if A has inf or nan
     A = np.asarray_chkfinite(A)
@@ -328,12 +330,12 @@ def rnmf(A, k, p=20, q=2, init='nndsvd', shuffle=False,
     # Compute QB decomposition
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Build sample matrix Y : Y = A * Omega, where Omega is a random test matrix
-    Omega = rns.rand(n, k+p).astype(A.dtype)
+    Omega = rns.rand(n, rank+oversample).astype(A.dtype)
     Y = A.dot(Omega)
     del Omega
 
-    #If q > 0 perfrom q subspace iterations
-    for i in range(q):
+    #If n_subspace > 0 perfrom n_subspace subspace iterations
+    for i in range(n_subspace):
         Y , _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True)
         Z , _ = linalg.qr(A.T.dot(Y), mode='economic', check_finite=False, overwrite_a=True)
         Y = A.dot(Z)
@@ -349,7 +351,7 @@ def rnmf(A, k, p=20, q=2, init='nndsvd', shuffle=False,
     # Initialization methods for factor matrices W and H
     # 'normal': nonnegative standard normal random init
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    W, H = _initialize_nmf(A, k, init=init, eps=1e-6, random_state=rns)
+    W, H = _initialize_nmf(A, rank, init=init, eps=1e-6, random_state=rns)
     Ht = np.array(H.T, order='C')
     W_tilde = Q.T.dot(W)
     del A
@@ -364,22 +366,22 @@ def rnmf(A, k, p=20, q=2, init='nndsvd', shuffle=False,
 
         # Update factor matrix H
         WtW = W.T.dot(W)
-        WtW.flat[::k + 1] += l2_reg_H # adds l2_reg only on the diagonal
+        WtW.flat[::rank + 1] += l2_reg_H # adds l2_reg only on the diagonal
         BtW = B.T.dot(W_tilde) - l1_reg_H
 
         # compute violation update
-        permutation = rns.permutation(k) if shuffle else np.arange(k)
+        permutation = rns.permutation(rank) if shuffle else np.arange(rank)
         violation += _fhals_update_shuffle(Ht, WtW, BtW, permutation)
 
         # Update factor matrix W
         HHt = Ht.T.dot(Ht)
-        HHt.flat[::k + 1] += l2_reg_W # adds l2_reg only on the diagonal
+        HHt.flat[::rank + 1] += l2_reg_W # adds l2_reg only on the diagonal
 
         # Rotate AHt back to high-dimensional space
         BHt = Q.dot(B.dot(Ht)) - l1_reg_W
 
         # compute violation update
-        permutation = rns.permutation(k) if shuffle else np.arange(k)
+        permutation = rns.permutation(rank) if shuffle else np.arange(rank)
         violation += _fhals_update_shuffle(W, HHt, BHt, permutation)
 
         # Project W to low-dimensional space
