@@ -9,7 +9,7 @@ import numpy as np
 from scipy import linalg
 
 from .sketch.transforms import johnson_lindenstrauss, sparse_johnson_lindenstrauss
-from .sketch.utils import perform_subspace_iterations
+from .sketch.utils import perform_subspace_iterations, orthonormalize
 from .utils import conjugate_transpose
 
 
@@ -81,6 +81,8 @@ def rqb(A, rank, oversample=10, n_subspace=2, sparse=False, random_state=None):
 
     if n_subspace > 0:
         Q = perform_subspace_iterations(A, Q, n_iter=n_subspace, axis=1)
+    else:
+        Q = orthonormalize(Q)        
 
     #Project the data matrix a into a lower dimensional subspace
     B = conjugate_transpose(Q).dot(A)
