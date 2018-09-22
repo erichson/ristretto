@@ -10,6 +10,13 @@ Welcome to ristretto's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   classes
+   auto_examples/index
+   Github Profile <https://github.com/erichson/ristretto.git>
+
+
+.. include readme as index page for now
+.. include:: ../README.rst
 
 
 Indices and tables

@@ -12,9 +12,11 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+cwd = os.getcwd()
+project_root = os.path.dirname(cwd)
+sys.path.insert(0, project_root)
 
 
 # -- Project information -----------------------------------------------------
@@ -24,22 +26,24 @@ copyright = '2018, N. Benjamin Erichson'
 author = 'N. Benjamin Erichson'
 
 # The short X.Y version
-version = '0.1'
+import ristretto
+version = ristretto.__version__
 # The full version, including alpha/beta/rc tags
-release = '0.1.2'
-
+release = ristretto.__version__
 
 # -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
 # needs_sphinx = '1.0'
+import sphinx_gallery
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
@@ -70,7 +74,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns = ['_build']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
@@ -186,3 +190,11 @@ epub_exclude_files = ['search.html']
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+
+
+sphinx_gallery_conf = {
+    'doc_module' : 'ristretto',
+    'backreferences_dir': 'generated',
+    'reference_url':{
+        'ristretto' : None}
+}
