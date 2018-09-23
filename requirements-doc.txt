@@ -1,0 +1,7 @@
+cython
+matplotlib
+nose
+numpy
+scipy
+sphinx
+sphinx-gallery
