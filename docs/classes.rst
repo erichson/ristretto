@@ -86,7 +86,7 @@ This is the reference for the functions contained in `ristretto
 :mod:`ristretto.lu`: LU Decomposition
 =====================================
 
-.. automodule:: ristretto.interp_decomp
+.. automodule:: ristretto.lu
    :no-members:
    :no-inherited-members:
 
@@ -130,7 +130,7 @@ This is the reference for the functions contained in `ristretto
 .. autosummary::
    :toctree: generated/
 
-   pca.robpca
+   pca.robspca
    pca.rspca
    pca.spca
 
@@ -169,7 +169,7 @@ This is the reference for the functions contained in `ristretto
    svd.rsvd
 
 
-.. _svd_ref:
+.. _utils_ref:
 
 :mod:`ristretto.utils`: Utility Functions
 =========================================
@@ -208,12 +208,12 @@ Transforms
 
    sketch.transforms.randomized_uniform_sampling
    sketch.transforms.johnson_lindenstrauss
-   sketch.sparse_johnson_lindenstrauss
-   sketch.fast_johnson_lindenstrauss
+   sketch.transforms.sparse_johnson_lindenstrauss
+   sketch.transforms.fast_johnson_lindenstrauss
 
 Utility Functions
 -----------------
-.. automodule:: ristretto.sketch.utilities
+.. automodule:: ristretto.sketch.utils
    :no-members:
    :no-inherited-members:
 
@@ -222,5 +222,5 @@ Utility Functions
 .. autosummary::
    :toctree: generated/
 
-   sketch.utilities.orthonormalize
-   sketch.utilities.perform_subspace_iterations
+   sketch.utils.orthonormalize
+   sketch.utils.perform_subspace_iterations

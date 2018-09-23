@@ -3,8 +3,11 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to ristretto's documentation!
-=====================================
+.. _index_ref:
+
+.. include readme as index page for now
+.. include:: ../README.rst
+
 
 .. toctree::
    :maxdepth: 2
@@ -13,10 +16,6 @@ Welcome to ristretto's documentation!
    classes
    auto_examples/index
    Github Profile <https://github.com/erichson/ristretto.git>
-
-
-.. include readme as index page for now
-.. include:: ../README.rst
 
 
 Indices and tables
