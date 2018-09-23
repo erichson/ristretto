@@ -17,7 +17,7 @@ from distutils.version import LooseVersion
 
 DISTNAME = 'ristretto'
 DESCRIPTION = 'ristretto: Randomized Dimension Reduction Library'
-with open('README.md') as f:
+with open('README.rst') as f:
     LONG_DESRIPTION = f.read()
 AUTHOR = 'N. Benjamin Erichson'
 AUTHOR_EMAIL = 'erichson@uw.edu'
@@ -128,7 +128,6 @@ def setup_package():
                     version=VERSION,
                     keywords=KEYWORDS,
                     long_description=LONG_DESRIPTION,
-                    long_description_content_type='text/markdown',
                     classifiers=[
                         'Development Status :: 4 - Beta',
                         'Intended Audience :: Science/Research',

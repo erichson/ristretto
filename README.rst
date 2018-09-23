@@ -1,7 +1,8 @@
 .. -*- mode: rst -*-
 
 .. image:: ristretto.png
-   :width: 500
+    :width: 500px
+
 
 The idea of randomized low-rank matrix approximations is to restrict the
 high-dimensional input data matrix to a low-dimensional space. In plain words,
@@ -12,8 +13,8 @@ the computational demands of traditional (deterministic) algorithms, and the
 computational advantage becomes pronounced with increasing matrix dimensions.
 
 
-ristretto: Package Overview
-===========================
+ristretto: Package Overview  |Travis|_ |Codecov|_ |Readthedocs|_
+=================================================================
 
 |Travis|_ |Codecov|_ |Readthedocs|_
 
@@ -26,15 +27,14 @@ ristretto: Package Overview
 .. |Readthedocs| image:: https://readthedocs.org/projects/ristretto/badge/?version=latest
 .. _Readthedocs: http://ristretto.readthedocs.io/en/latest/?badge=latest
 
-
 The Python software library ristretto provides a collection of randomized matrix
 algorithms which can be used for dimension reduction. Overview of implemented routines:
-- Randomized singular value decomposition: ``from ristretto.svd import rsvd``.
-- Randomized single-view singular value decomposition: ``from ristretto.svd import rsvd_single``.
-- Randomized interpolative decomposition:``from ristretto.interp_decomp import rinterp_decomp``.
-- Randomized CUR decomposition: ``from ristretto.cur import rcur``.
-- Randomized LU decompositoin: ``from ristretto.lu import rlu``.
-- Randomized nonnegative matrix factorization: ``from ristretto.nmf import rnmf_fhals``.
+
+* Randomized singular value decomposition: ``from ristretto.svd import rsvd``.
+* Randomized interpolative decomposition:``from ristretto.interp_decomp import rinterp_decomp``.
+* Randomized CUR decomposition: ``from ristretto.cur import rcur``.
+* Randomized LU decompositoin: ``from ristretto.lu import rlu``.
+* Randomized nonnegative matrix factorization: ``from ristretto.nmf import rnmf_fhals``.
 
 Get started
 -----------
@@ -42,8 +42,10 @@ Get started
 Quick Installation via PIP
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 To install the latest stable release of ristretto run::
-   
+
    $ pip install ristretto
+
+computational advantage becomes pronounced with increasing matrix dimensions.
 
 
 Obtaining the Latest Software via GIT
