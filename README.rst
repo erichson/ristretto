@@ -16,8 +16,6 @@ computational advantage becomes pronounced with increasing matrix dimensions.
 ristretto: Package Overview  |Travis|_ |Codecov|_ |Readthedocs|_
 =================================================================
 
-|Travis|_ |Codecov|_ |Readthedocs|_
-
 .. |Travis| image:: https://travis-ci.org/eirchson/ristretto.svg?branch=master
 .. _Travis: https://travis-ci.org/erichson/ristretto
 
