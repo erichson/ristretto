@@ -10,11 +10,11 @@ from __future__ import division, print_function
 import numpy as np
 from scipy import linalg
 
-from .qb import rqb
+from ristretto.qb import rqb
 
 
-def spca(X, n_components, alpha=0.1, beta=0.01, max_iter=500, tol=1e-5,
-        verbose=True):
+def spca(X, n_components, alpha=0.1, beta=1e-5, regularizer='l1',
+         max_iter=500, tol=1e-5, verbose=True):
     r"""Sparse Principal Component Analysis (SPCA).
 
     Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
@@ -35,9 +35,14 @@ def spca(X, n_components, alpha=0.1, beta=0.01, max_iter=500, tol=1e-5,
     alpha : float, (default ``alpha = 0.1``).
         Sparsity controlling parameter. Higher values lead to sparser components.
 
-    beta : float, (default ``beta = 0.1``).
+    beta : float, (default ``beta = 1e-5``).
         Amount of ridge shrinkage to apply in order to improve conditionin.
 
+    regularizer : string {'l0', 'l1'}.
+        Type of sparsity-inducing regularizer. The l1 norm (also known as LASSO)
+        leads to softhreshold operator (default).  The l0 norm is implemented 
+        via a hardthreshold operator. 
+        
     max_iter : integer, (default ``max_iter = 500``).
         Maximum number of iterations to perform before exiting.
 
@@ -107,13 +112,22 @@ def spca(X, n_components, alpha=0.1, beta=0.01, max_iter=500, tol=1e-5,
         G = VD2.dot(Vt.dot(A - B)) - beta * B
         B_temp = B + nu * G
 
-        # l1 soft-threshold
-        idxH = B_temp > kappa
-        idxL = B_temp <= -kappa
-        B = np.zeros_like(B)
-        B[idxH] = B_temp[idxH] - kappa
-        B[idxL] = B_temp[idxL] + kappa
 
+        if regularizer == 'l1':
+            # l1 soft-threshold
+            idxH = B_temp > kappa
+            idxL = B_temp <= -kappa
+            B = np.zeros_like(B)
+            B[idxH] = B_temp[idxH] - kappa
+            B[idxL] = B_temp[idxL] + kappa
+            
+            
+        elif regularizer == 'l0':
+            idxH = B_temp**2 > kappa ** 2
+            B = np.zeros_like(B)
+            B[idxH] = B_temp[idxH]
+            
+            
         if n_iter % 5 == 0:
             # compute residual
             R = VD.T - VD.T.dot(B).dot(A.T)
@@ -283,8 +297,8 @@ def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
     return B, A, S, eigvals, obj
 
 
-def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, tol=1e-5,
-          verbose=0, oversample=10, n_subspace=2, random_state=None):
+def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, regularizer='l1',
+          tol=1e-5, verbose=0, oversample=10, n_subspace=2, random_state=None):
     r"""Randomized Sparse Principal Component Analysis (rSPCA).
 
     Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
@@ -314,6 +328,12 @@ def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, tol=1e-5,
 
     beta : float, (default ``beta = 0.1``).
         Amount of ridge shrinkage to apply in order to improve conditionin.
+
+    regularizer : string {'l0', 'l1'}.
+        Type of sparsity-inducing regularizer. The l1 norm (also known as LASSO)
+        leads to softhreshold operator (default).  The l0 norm is implemented 
+        via a hardthreshold operator. 
+        
 
     max_iter : integer, (default ``max_iter = 500``).
         Maximum number of iterations to perform before exiting.
@@ -365,7 +385,7 @@ def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, tol=1e-5,
 
     # Compute Sparse PCA
     B, A, eigvals, obj = spca(Xcompressed, n_components=n_components,
-                              alpha=alpha, beta=beta,
+                              alpha=alpha, beta=beta, regularizer=regularizer,
                               max_iter=max_iter, tol=tol, verbose=verbose)
 
     # rescale eigen values
