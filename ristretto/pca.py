@@ -127,7 +127,6 @@ def spca(X, n_components, alpha=0.1, beta=1e-5, regularizer='l1',
             idxH = B_temp**2 > kappa * 2
             B = np.zeros_like(B)
             B[idxH] = B_temp[idxH]
-
             
             
         if n_iter % 5 == 0:
@@ -297,6 +296,9 @@ def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
 
     eigvals = Dtilde / (m-1)
     return B, A, S, eigvals, obj
+
+
+
 
 
 def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, regularizer='l1',
