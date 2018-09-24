@@ -13,7 +13,7 @@ from .sketch.utils import perform_subspace_iterations, orthonormalize
 from .utils import conjugate_transpose
 
 
-def rqb(A, rank, oversample=10, n_subspace=2, sparse=False, random_state=None):
+def rqb(A, rank, oversample=20, n_subspace=2, sparse=False, random_state=None):
     """Randomized QB Decomposition.
 
     Randomized algorithm for computing the approximate low-rank QB
@@ -88,3 +88,94 @@ def rqb(A, rank, oversample=10, n_subspace=2, sparse=False, random_state=None):
     B = conjugate_transpose(Q).dot(A)
 
     return Q, B
+
+
+
+def rqb_block(A, rank, oversample=20, n_subspace=2, n_blocks=2, sparse=False, random_state=None):
+    """Randomized QB Decomposition.
+    Blocked randomized algorithm for computing the approximate low-rank QB
+    decomposition of a rectangular `(m, n)` matrix `A`, with target rank
+    `rank << min{m, n}`. The input matrix is factored as `A = Q * B`.
+    The quality of the approximation can be controlled via the oversampling
+    parameter `oversample` and `n_subspace` which specifies the number of
+    subspace iterations.
+    Parameters
+    ----------
+    A : array_like, shape `(m, n)`.
+        Input array.
+    rank : integer
+        Target rank. Best if `rank << min{m,n}`
+    oversample : integer, optional (default: 10)
+        Controls the oversampling of column space. Increasing this parameter
+        may improve numerical accuracy.
+    n_subspace : integer, default: 2.
+        Parameter to control number of subspace iterations. Increasing this
+        parameter may improve numerical accuracy. Every additional subspace 
+        iterations requires an additional full pass over the data matrix. 
+    n_blocks : integer, default: 2.
+        Paramter to control in how many blocks of columns the input matrix 
+        should be split. A larger number requires less fast memory, while it 
+        leads to a higher computational time. 
+    sparse : boolean, optional (default: False)
+        If sparse == True, perform compressed random qr decomposition.
+    random_state : integer, RandomState instance or None, optional (default ``None``)
+        If integer, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used by np.random.
+    Returns
+    -------
+    Q:  array_like, shape `(m, rank + oversample)`.
+        Orthonormal basis matrix.
+    B : array_like, shape `(rank + oversample, n)`.
+        Smaller matrix.
+    References
+    ----------
+    N. Halko, P. Martinsson, and J. Tropp.
+    "Finding structure with randomness: probabilistic
+    algorithms for constructing approximate matrix
+    decompositions" (2009).
+    (available at `arXiv <http://arxiv.org/abs/0909.4061>`_).
+    S. Voronin and P.Martinsson.
+    "RSVDPACK: Subroutines for computing partial singular value
+    decompositions via randomized sampling on single core, multi core,
+    and GPU architectures" (2015).
+    (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
+    """
+    
+    m, n = A.shape
+        
+    # index sets
+    row_sets = np.array_split(range(m), n_blocks)
+    
+    Q_block = []
+    K = []
+
+    nblock = 1
+    for rows in row_sets:
+        
+        Qtemp, Ktemp = rqb(A[rows,:], rank=rank, oversample=oversample, 
+                           n_subspace=n_subspace, sparse=sparse, random_state=random_state)
+        
+        Q_block.append(Qtemp)
+        K.append(Ktemp)
+        #print('Block step: ', nblock)
+        nblock += 1
+
+
+    #K = np.concatenate(K, axis=0)
+    
+    Q_small, B = rqb(np.concatenate(K, axis=0), rank=rank, 
+                     oversample=oversample, n_subspace=n_subspace)
+
+    Q_small = np.vsplit(Q_small, n_blocks)
+    
+    Q = [Q_block[i].dot(Q_small[i]) for i in range(n_blocks)]
+    Q = np.concatenate(Q, axis=0)
+
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Return Q and B
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    #print('Blocked QB done!')
+
+    return ( Q , B )

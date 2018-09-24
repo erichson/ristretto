@@ -1,6 +1,6 @@
 import numpy as np
 
-from ristretto.qb import rqb
+from ristretto.qb import rqb, rqb_block
 
 from .utils import relative_error
 
@@ -32,3 +32,53 @@ def test_rqb_complex128():
     Ak = Q.dot(B)
 
     assert relative_error(A, Ak) < atol_float64
+
+
+# =============================================================================
+# rqb function
+# =============================================================================
+def test_rqb_block_float64():
+    m, k = 100, 10
+    A = np.random.randn(m, k).astype(np.float64)
+    A = A.dot(A.T)
+
+    Q, B = rqb_block(A, k, oversample=5, n_subspace=2, n_blocks=4)
+    Ak = Q.dot(B)
+
+    assert relative_error(A, Ak) < atol_float64
+
+
+def test_rqb_block_wide_float64():
+    m, k = 100, 10
+    A = np.random.randn(m, k).astype(np.float64)
+    A = A.dot(A.T)
+    A = A[0:80,:]
+
+    Q, B = rqb_block(A, k, oversample=5, n_subspace=2, n_blocks=4)
+    Ak = Q.dot(B)
+
+    assert relative_error(A, Ak) < atol_float64
+
+def test_rqb_block_complex128():
+    m, k = 100, 10
+    A = np.random.randn(m, k).astype(np.float64) + \
+            1j * np.random.randn(m, k).astype(np.float64)
+    A = A.dot(A.conj().T)
+
+    Q, B = rqb_block(A, k, oversample=5, n_subspace=2, n_blocks=4)
+    Ak = Q.dot(B)
+
+    assert relative_error(A, Ak) < atol_float64
+    
+    
+def test_rqb_block_wide_complex128():
+    m, k = 100, 10
+    A = np.random.randn(m, k).astype(np.float64) + \
+            1j * np.random.randn(m, k).astype(np.float64)
+    A = A.dot(A.conj().T)
+    A = A[0:40,:]
+
+    Q, B = rqb_block(A, k, oversample=5, n_subspace=2, n_blocks=4)
+    Ak = Q.dot(B)
+
+    assert relative_error(A, Ak) < atol_float64    
