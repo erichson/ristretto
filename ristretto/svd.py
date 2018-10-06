@@ -12,7 +12,7 @@ import numpy as np
 from scipy import linalg
 from scipy import sparse
 
-from .qb import rqb
+from .qb import compute_rqb
 from .utils import conjugate_transpose
 
 
@@ -98,7 +98,7 @@ def rsvd(A, rank, oversample=10, n_subspace=2, sparse=False, random_state=None):
         flipped = True
 
     # Compute QB decomposition
-    Q, B = rqb(A, rank, oversample=oversample, n_subspace=n_subspace,
+    Q, B = compute_rqb(A, rank, oversample=oversample, n_subspace=n_subspace,
                sparse=sparse, random_state=random_state)
 
     # Compute SVD

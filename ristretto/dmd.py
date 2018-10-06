@@ -10,7 +10,7 @@ from __future__ import division
 import numpy as np
 from scipy import linalg
 
-from .qb import rqb
+from .qb import compute_rqb
 from .utils import conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
@@ -227,7 +227,8 @@ def rdmd(A, rank, dt=1, oversample=10, n_subspace=2, return_amplitudes=False,
     (available at `arXiv <https://arxiv.org/abs/1609.00048>`_).
     """
     # Compute QB decomposition
-    Q, B = rqb(A, rank, oversample=oversample, n_subspace=n_subspace, random_state=random_state)
+    Q, B = compute_rqb(A, rank, oversample=oversample, n_subspace=n_subspace,
+                       random_state=random_state)
 
     # only difference is we need to premultiply F from dmd
     # vandermonde is basically already computed
