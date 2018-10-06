@@ -1,3 +1,6 @@
+# TODO: add docs for DMD and RDMD
+# TODO: change function/class attribute names to be consistent
+#       (ie l == amplitudes)
 """
 Dynamic Mode Decomposition (DMD).
 """
@@ -9,22 +12,15 @@ from __future__ import division
 
 import numpy as np
 from scipy import linalg
+from sklearn.utils.validation import check_is_fitted
 
 from .qb import compute_rqb
 from .utils import conjugate_transpose
 
-_VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 _VALID_MODES = ('standard', 'exact', 'exact_scaled')
 
 
-def _get_amplitudes(F, A):
-    """return amplitudes given dynamic modes F and original array A"""
-    result = linalg.lstsq(F, A[:, 0])
-    return result[0]
-
-
-def dmd(A, rank=None, dt=1, modes='exact', return_amplitudes=False,
-        return_vandermonde=False, order=True):
+def compute_dmd(A, rank=None, dt=1, modes='exact', order=True):
     """Dynamic Mode Decomposition.
 
     Dynamic Mode Decomposition (DMD) is a data processing algorithm which
@@ -93,18 +89,14 @@ def dmd(A, rank=None, dt=1, modes='exact', return_amplitudes=False,
         raise ValueError('modes must be one of %s, not %s'
                          % (' '.join(_VALID_MODES), modes))
 
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
-
-    if rank is not None and (rank < 1 or rank > n ):
+    if rank is not None and (rank < 1 or rank > n):
         raise ValueError('rank must be > 1 and less than n')
 
-    #Split data into lef and right snapshot sequence
-    X = A[:, :(n-1)] #pointer
-    Y = A[:, 1:n] #pointer
+    # Split data into lef and right snapshot sequence
+    X = A[:, :(n-1)]  # pointer
+    Y = A[:, 1:n]     # pointer
 
-    #Singular Value Decomposition
+    # Singular Value Decomposition
     U, s, Vh = linalg.svd(X, compute_uv=True, full_matrices=False,
                           overwrite_a=False, check_finite=True)
 
@@ -113,16 +105,16 @@ def dmd(A, rank=None, dt=1, modes='exact', return_amplitudes=False,
         s = s[:rank]
         Vh = Vh[:rank, :]
 
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #Solve the LS problem to find estimate for M using the pseudo-inverse
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #real: M = U.T * Y * Vt.T * S**-1
-    #complex: M = U.H * Y * Vt.H * S**-1
-    #Let G = Y * Vt.H * S**-1, hence M = M * G
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Solve the LS problem to find estimate for M using the pseudo-inverse
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # real: M = U.T * Y * Vt.T * S**-1
+    # complex: M = U.H * Y * Vt.H * S**-1
+    # Let G = Y * Vt.H * S**-1, hence M = M * G
     G = np.dot(Y, conjugate_transpose(Vh)) / s
     M = np.dot(conjugate_transpose(U), G)
 
-    #Eigen Decomposition
+    # Eigen Decomposition
     l, W = linalg.eig(M, right=True, overwrite_a=True)
     omega = np.log(l) / dt
 
@@ -133,7 +125,7 @@ def dmd(A, rank=None, dt=1, modes='exact', return_amplitudes=False,
         l = l[sort_idx]
         omega = omega[sort_idx]
 
-    #Compute DMD Modes
+    # Compute DMD Modes
     if modes == 'standard':
         F = np.dot(U, W)
     else:
@@ -141,23 +133,11 @@ def dmd(A, rank=None, dt=1, modes='exact', return_amplitudes=False,
         if modes == 'exact_scaled':
             F /= l
 
-    result = [F]
-    if return_amplitudes:
-        #Compute amplitueds b using least-squares: Fb=x1
-        b = _get_amplitudes(F, A)
-        result.append(b)
-
-    if return_vandermonde:
-        #Compute Vandermonde matrix
-        V = np.fliplr(np.vander(l , N=n))
-        result.append(V)
-
-    result.append(omega)
-    return result
+    return F, l, omega
 
 
-def rdmd(A, rank, dt=1, oversample=10, n_subspace=2, return_amplitudes=False,
-         return_vandermonde=False, order=True, random_state=None):
+def compute_rdmd(A, rank, dt=1, oversample=10, n_subspace=2, modes='standard',
+                 order=True, random_state=None):
     """Randomized Dynamic Mode Decomposition.
 
     Dynamic Mode Decomposition (DMD) is a data processing algorithm which
@@ -232,21 +212,66 @@ def rdmd(A, rank, dt=1, oversample=10, n_subspace=2, return_amplitudes=False,
 
     # only difference is we need to premultiply F from dmd
     # vandermonde is basically already computed
-    # TODO: factor out the rest so no code is repeated
-    F, V, omega = dmd(B, rank=rank, dt=dt, modes='standard', return_amplitudes=False,
-                      return_vandermonde=True, order=order)
+    F, l, omega = compute_dmd(B, rank=rank, dt=dt, modes=modes, order=order)
 
-    #Compute DMD Modes
+    # Compute DMD Modes
     F = Q.dot(F)
 
-    result = [F]
-    if return_amplitudes:
-        #Compute amplitueds b using least-squares: Fb=x1
-        b = _get_amplitudes(F, A)
-        result.append(b)
+    return F, l, omega
 
-    if return_vandermonde:
-        result.append(V)
 
-    result.append(omega)
-    return result
+def get_amplitudes(A, F):
+    '''Compute amplitueds b using least-squares: Fb=x1'''
+    return linalg.lstsq(F, A[:, 0])[0]
+
+
+def get_vandermonde(A, l):
+    '''Compute Vandermonde matrix'''
+    return np.fliplr(np.vander(l, N=A.shape[1]))
+
+
+class DMD(object):
+
+    def __init__(self, rank=None, dt=1, modes='exact', order=True):
+        self.rank = rank
+        self.dt = dt
+        self.modes = modes
+        self.order = order
+
+    def fit(self, A):
+        '''Fits DMD'''
+        self.A_ = np.asarray_chkfinite(A)
+        self.F_, self.l_, self.omega_ = compute_dmd(
+            self.A_, rank=self.rank, dt=self.dt, modes=self.modes,
+            order=self.order)
+        return self
+
+    @property
+    def amplitudes_(self):
+        '''Compute amplitueds b using least-squares: Fb=x1'''
+        check_is_fitted(self, ['A_', 'F_'])
+        return get_amplitudes(self.A_, self.F_)
+
+    @property
+    def vandermonde_(self):
+        '''Compute Vandermonde matrix'''
+        check_is_fitted(self, ['A_', 'l_'])
+        return get_vandermonde(self.A_, self.l_)
+
+
+class RDMD(DMD):
+
+    def __init__(self, rank=None, dt=1, oversample=10, n_subspace=2,
+                 modes='standard', order=True, random_state=None):
+        super(RDMD, self).__init__(rank=rank, dt=dt, modes=modes, order=order)
+        self.oversample = oversample
+        self.n_subspace = n_subspace
+        self.random_state = random_state
+
+    def fit(self, A):
+        self.A_ = np.asarray_chkfinite(A)
+        self.F_, self.l_, self.omega_ = compute_rdmd(
+            self.A_, rank=self.rank, dt=self.dt, oversample=self.oversample,
+            n_subspace=self.n_subspace, modes=self.modes, order=self.order,
+            random_state=self.random_state)
+        return self
