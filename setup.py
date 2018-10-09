@@ -10,7 +10,7 @@ import os
 import re
 import sys
 import shutil
-from setuptools import setup, Extension, find_packages
+from setuptools import setup, find_packages
 from distutils.command.clean import clean as Clean
 from distutils.version import LooseVersion
 
@@ -81,31 +81,6 @@ class CleanCommand(Clean):
                 if dirname == '__pycache__':
                     shutil.rmtree(os.path.join(dirpath, dirname))
 
-# Custom cythonize command to check if Cython installed and up to date from scikit-learn
-# https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/_build_utils/__init__.py#L63
-def cythonize_extensions(extensions):
-    """Tweaks for building extensions between release and development mode."""
-    message = ('\nPlease install cython with a version >= {0} in order '
-               'to build a ristretto development version.').format(
-                   CYTHON_MIN_VERSION)
-    try:
-        import Cython
-        if LooseVersion(Cython.__version__) < CYTHON_MIN_VERSION:
-            message += ' Your version of Cython was {0}.'.format(Cython.__version__)
-            raise ValueError(message)
-        from Cython.Build import cythonize
-    except (ModuleNotFoundError, ImportError) as exc:
-        args = exc.args[0] + message
-        raise type(exc)(args)
-
-    return cythonize(extensions)
-
-
-extensions = [
-    Extension("ristretto.externals.cdnmf_fast", ["ristretto/externals/cdnmf_fast.pyx"]),
-]
-ext_modules = cythonize_extensions(extensions)
-
 cmdclass = {'clean': CleanCommand}
 
 extra_setuptools_args = dict(
@@ -116,7 +91,6 @@ extra_setuptools_args = dict(
         'scipy >= {0}'.format(SCIPY_MIN_VERSION),
         ]
 )
-
 
 def setup_package():
     metadata = dict(name=DISTNAME,
@@ -139,7 +113,6 @@ def setup_package():
                     ],
                     test_suite='nose.collector',
                     cmdclass=cmdclass,
-                    ext_modules=ext_modules,
                     packages=find_packages(exclude=['tests']),
                     **extra_setuptools_args)
 

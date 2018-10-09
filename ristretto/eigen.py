@@ -12,10 +12,11 @@ from __future__ import division, print_function
 
 import numpy as np
 from scipy import linalg
+from sklearn.utils import check_random_state
 
 from .sketch.transforms import johnson_lindenstrauss, randomized_uniform_sampling
 from .sketch.utils import perform_subspace_iterations
-from .utils import check_random_state, conjugate_transpose
+from .utils import conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 

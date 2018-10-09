@@ -1,7 +1,7 @@
-cython
 matplotlib
 nose
 numpy
+scikit-learn
 scipy
 sphinx
 sphinx-gallery

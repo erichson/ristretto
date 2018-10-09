@@ -4,14 +4,13 @@ Nonnegative Matrix Factorization.
 # Authors: N. Benjamin Erichson
 #          Joseph Knox
 # License: GNU General Public License v3.0
-
 from __future__ import division, print_function
 
 import numpy as np
 from scipy import linalg
 
-from .externals.cdnmf_fast import _update_cdnmf_fast as _fhals_update_shuffle
-from .externals.nmf import _initialize_nmf
+from sklearn.decomposition.cdnmf_fast import _update_cdnmf_fast
+from sklearn.decomposition.nmf import _initialize_nmf
 
 _VALID_DTYPES = (np.float32, np.float64)
 
@@ -154,7 +153,7 @@ def nmf(A, rank, init='nndsvd', shuffle=False,
 
         # compute violation update
         permutation = rns.permutation(rank) if shuffle else np.arange(rank)
-        violation += _fhals_update_shuffle(Ht, WtW, AtW, permutation)
+        violation += _update_cdnmf_fast(Ht, WtW, AtW, permutation)
 
         # Update factor matrix W with regularization
         HHt = Ht.T.dot(Ht)
@@ -163,7 +162,7 @@ def nmf(A, rank, init='nndsvd', shuffle=False,
 
         # compute violation update
         permutation = rns.permutation(rank) if shuffle else np.arange(rank)
-        violation += _fhals_update_shuffle(W, HHt, AHt, permutation)
+        violation += _update_cdnmf_fast(W, HHt, AHt, permutation)
 
         # Compute stopping condition.
         if niter == 0:
@@ -371,7 +370,7 @@ def rnmf(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=False,
 
         # compute violation update
         permutation = rns.permutation(rank) if shuffle else np.arange(rank)
-        violation += _fhals_update_shuffle(Ht, WtW, BtW, permutation)
+        violation += _update_cdnmf_fast(Ht, WtW, BtW, permutation)
 
         # Update factor matrix W
         HHt = Ht.T.dot(Ht)
@@ -382,7 +381,7 @@ def rnmf(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=False,
 
         # compute violation update
         permutation = rns.permutation(rank) if shuffle else np.arange(rank)
-        violation += _fhals_update_shuffle(W, HHt, BHt, permutation)
+        violation += _update_cdnmf_fast(W, HHt, BHt, permutation)
 
         # Project W to low-dimensional space
         W_tilde = Q.T.dot(W)

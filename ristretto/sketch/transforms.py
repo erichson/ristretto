@@ -6,10 +6,10 @@ from math import log
 
 import numpy as np
 from scipy import fftpack
-from scipy import sparse
+from sklearn.utils import check_random_state
+from sklearn.utils.extmath import safe_sparse_dot
 
 from . import _sketches
-from ..utils import check_random_state, safe_sparse_dot
 
 
 def randomized_uniform_sampling(A, l, axis=1, random_state=None):
