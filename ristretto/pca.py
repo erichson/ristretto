@@ -1,20 +1,25 @@
+# TODO: improve docs (especially for classes)
+# TODO: evaluate whether returning S is necessary when robust == True
+#    S : array_like, `(m, n)`.
+#        Sparse component which captures grossly corrupted entries in the data
+#        matrix.
 """
 Sparse Principal Component Analysis (SPCA).
 """
 # Authors: N. Benjamin Erichson
 #          Joseph Knox
 # License: GNU General Public License v3.0
-
-from __future__ import division, print_function
+from __future__ import division
 
 import numpy as np
 from scipy import linalg
 
-from ristretto.qb import compute_rqb
+from .qb import compute_rqb
+from .utils import soft_l0, soft_l1
 
 
-def spca(X, n_components, alpha=0.1, beta=1e-5, regularizer='l1',
-         max_iter=500, tol=1e-5, verbose=True):
+def compute_spca(X, n_components=None, alpha=0.1, beta=1e-5, gamma=0.1,
+                 robust=False, regularizer='l1', max_iter=1e3, tol=1e-5):
     r"""Sparse Principal Component Analysis (SPCA).
 
     Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
@@ -43,14 +48,14 @@ def spca(X, n_components, alpha=0.1, beta=1e-5, regularizer='l1',
         leads to softhreshold operator (default).  The l0 norm is implemented
         via a hardthreshold operator.
 
+    robust : bool ``{'True', 'False'}``, optional (default ``False``).
+        Use a robust algorithm to compute the sparse PCA.
+
     max_iter : integer, (default ``max_iter = 500``).
         Maximum number of iterations to perform before exiting.
 
     tol : float, (default ``tol = 1e-5``).
         Stopping tolerance for reconstruction error.
-
-    verbose : bool ``{'True', 'False'}``, optional (default ``verbose = True``).
-        Display progress.
 
     Returns
     -------
@@ -71,238 +76,105 @@ def spca(X, n_components, alpha=0.1, beta=1e-5, regularizer='l1',
     Variable Projection for SPCA solves the following optimization problem:
     minimize :math:`1/2 \| X - X B A^T \|^2 + \alpha \|B\|_1 + 1/2 \beta \|B\|^2`
     """
-    # Shape of input matrix
-    m = X.shape[0]
+    def compute_residual(X, B, A):
+        return X - X.dot(B).dot(A.T)
 
-    #--------------------------------------------------------------------
-    #   Initialization of Variable Projection Solver
-    #--------------------------------------------------------------------
-    _, D, Vt = linalg.svd(X, full_matrices=False, overwrite_a=False)
-    Dmax = D[0] # l2 norm
+    if regularizer == 'l1':
+        regularizer_func = soft_l1
+    elif regularizer == 'l0':
+        if robust:
+            raise NotImplementedError('l0 regularization is not supported for '
+                                      'robust sparse pca')
+        regularizer_func = soft_l0
+    else:
+        raise ValueError('regularizer must be one of ("l1", "l0"), not '
+                         '%s.' % regularizer)
 
-    A = Vt.T[:, 0:n_components]
-    B = Vt.T[:, 0:n_components]
-
-    VD = Vt.T * D
-    VD2 = Vt.T * D**2
-
-    # Set Tuning Parameters
-    alpha *= Dmax**2
-    beta *= Dmax**2
-
-    n_iter = 0
-    nu = 1.0 / (Dmax**2 + beta)
-    kappa = nu * alpha
-
-    #   Apply Variable Projection Solver
-    obj = []
-    while max_iter > n_iter:
-
-        # Update A:
-        # X'XB = UDV'
-        # Compute X'XB via SVD of X
-        Z = VD2.dot(Vt.dot(B))
-
-        Utilde, Dtilde, Vttilde = linalg.svd(Z, full_matrices=False, overwrite_a=True)
-
-        A = Utilde.dot(Vttilde)
-
-        # Proximal Gradient Descent to Update B
-        #G = XtX.dot(A-B) - beta * B
-        G = VD2.dot(Vt.dot(A - B)) - beta * B
-
-
-        if regularizer == 'l1':
-            # l1 soft-threshold
-            #idxH = B_temp > kappa
-            #idxL = B_temp <= -kappa
-            #B = np.zeros_like(B)
-            #B[idxH] = B_temp[idxH] - kappa
-            #B[idxL] = B_temp[idxL] + kappa
-            B = B + nu * G
-            B = np.clip(abs(B) - kappa, 0, None) * np.sign(B)
-
-        elif regularizer == 'l0':
-            B_temp = B + nu * G
-            idxH = B_temp**2 > kappa * 2
-            B = np.zeros_like(B)
-            B[idxH] = B_temp[idxH]
-
-
-        if n_iter % 5 == 0:
-            # compute residual
-            R = VD.T - VD.T.dot(B).dot(A.T)
-
-            # Compute objective function
-            obj.append(0.5*np.sum(R**2) + alpha*np.sum(np.abs(B)) +
-                       0.5*beta*np.sum(B**2))
-
-            # Verbose
-            if verbose:
-                print("Iteration:  %s, Objective value:  %s" % (n_iter, obj[-1]))
-
-            # Break if obj is not improving anymore
-            if n_iter > 0 and abs(obj[-2] - obj[-1]) / obj[-1] < tol:
-                break
-
-        # Next iter
-        n_iter += 1
-
-    eigvals = Dtilde / (m - 1)
-    return(B, A, eigvals, obj)
-
-
-def robspca(X, n_components, alpha=0.1, beta=0.1, gamma=0.1, max_iter=1000,
-            tol=1e-5, verbose=True):
-    r"""Robust Sparse Principal Component Analysis (Robust SPCA).
-
-    Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
-    computes a set of sparse components that can optimally reconstruct the
-    input data.  The amount of sparseness is controllable by the coefficient
-    of the L1 penalty, given by the parameter alpha. In addition, some ridge
-    shrinkage can be applied in order to improve conditioning.
-
-
-    Parameters
-    ----------
-    X : array_like, shape `(m, n)`.
-        Input array.
-
-    n_components : integer, `n_components << min{m,n}`.
-        Target rank, i.e., number of sparse components to be computed.
-
-    alpha : float, (default ``alpha = 0.1``).
-        Sparsity controlling parameter. Higher values lead to sparser components.
-
-    beta : float, (default ``beta = 0.1``)
-        Amount of ridge shrinkage to apply in order to improve conditionin.
-
-    gamma : float, (default ``gamma = 0.1``).
-        Sparsity controlling parameter for the error matrix S.
-        Smaller values lead to a larger amount of n_iterse removeal.
-
-    max_iter : integer, (default ``max_iter = 500``).
-        Maximum number of iterations to perform before exiting.
-
-    tol : float, (default ``tol = 1e-5``).
-        Stopping tolerance for reconstruction error.
-
-    verbose : bool ``{'True', 'False'}``, optional (default ``verbose = True``).
-        Display progress.
-
-
-    Returns
-    -------
-    B:  array_like, `(n, n_components)`.
-        Sparse components extracted from the data.
-
-    A : array_like, `(n, n_components)`.
-        Orthogonal components extracted from the data.
-
-    S : array_like, `(m, n)`.
-        Sparse component which captures grossly corrupted entries in the data
-        matrix.
-
-    eigvals : array_like, `(n_components)`.
-        Eigenvalues correspnding to the extracted components.
-
-    obj : array_like, `(n_iter)`.
-        Objective value at the i-th iteration.
-
-
-    Notes
-    -----
-    Variable Projection for SPCA solves the following optimization problem:
-    minimize :math:`1/2 \| X - X B A^T \|^2 + \alpha \|B\|_1 + 1/2 \beta \|B\|^2`
-    """
-    # Shape of input matrix
-    m = X.shape[0]
+    m, n = X.shape
+    if n_components is not None:
+        if n_components > n:
+            raise ValueError('n_components must be less than the number '
+                             'of columns of X (%d)' % n)
+    else:
+        n_components = n
 
     # Initialization of Variable Projection Solver
     U, D, Vt = linalg.svd(X, full_matrices=False, overwrite_a=False)
+    Dmax = D[0]  # l2 norm
 
-    Dmax = D[0] #l2 norm
+    A = Vt[:n_components].T
+    B = Vt[:n_components].T
 
-    U = U[:,0:n_components]
-    Vt = Vt[0:n_components,:]
-
-    A = Vt.T
-    B = Vt.T
+    if robust:
+        U = U[:, :n_components]
+        Vt = Vt[:n_components]
+        S = np.zeros_like(X)
+    else:
+        # compute outside the loop
+        VD = Vt.T * D
+        VD2 = Vt.T * D**2
 
     # Set Tuning Parameters
     alpha *= Dmax**2
     beta *= Dmax**2
-    nu   = 1.0 / (Dmax**2 + beta)
+    nu = 1.0 / (Dmax**2 + beta)
     kappa = nu * alpha
-    S = np.zeros_like(X)
 
-    # Apply Variable Projection Solver
+    obj = []  # values of objective function
     n_iter = 0
-    obj = []
+
+    #   Apply Variable Projection Solver
     while max_iter > n_iter:
 
         # Update A:
         # X'XB = UDV'
         # Compute X'XB via SVD of X
-        XS = X - S
-        XB = X.dot(B)
-        Z = (XS).T.dot(XB)
+        if robust:
+            XS = X - S
+            XB = X.dot(B)
+            Z = (XS).T.dot(XB)
+        else:
+            Z = VD2.dot(Vt.dot(B))
 
-        Utilde, Dtilde, Vttilde = linalg.svd( Z , full_matrices=False, overwrite_a=True)
+        Utilde, Dtilde, Vttilde = linalg.svd(Z, full_matrices=False, overwrite_a=True)
         A = Utilde.dot(Vttilde)
 
-
         # Proximal Gradient Descent to Update B
-        R = XS - XB.dot(A.T)
-        G = X.T.dot(R.dot(A)) - beta * B
-        B_temp = B + nu * G
+        if robust:
+            R = XS - XB.dot(A.T)
+            G = X.T.dot(R.dot(A)) - beta * B
+        else:
+            G = VD2.dot(Vt.dot(A - B)) - beta * B
 
+        B = regularizer_func(B + nu * G, kappa)
 
-        # l1 soft-threshold
-        idxH = B_temp > kappa
-        idxL = B_temp <= -kappa
-        B = np.zeros_like(B)
-        B[idxH] = B_temp[idxH] - kappa
-        B[idxL] = B_temp[idxL] + kappa
+        if robust:
+            R = compute_residual(X, B, A)
+            S = soft_l1(R, gamma)
+            R -= S
+        else:
+            R = compute_residual(VD.T, B, A)
 
-        # compute residual
-        R = X - X.dot(B).dot(A.T)
+        objective = 0.5*np.sum(R**2) + alpha*np.sum(np.abs(B)) + 0.5*beta*np.sum(B**2)
+        if robust:
+            objective += gamma * np.sum(np.abs(S))
 
-        # l1 soft-threshold
-        idxH = R > gamma
-        idxL = R <= -gamma
-        S = np.zeros_like(S)
-        S[idxH] = R[idxH] - gamma
-        S[idxL] = R[idxL] + gamma
-
-
-        # Compute objective function
-        obj.append(0.5 * np.sum((R-S)**2) + alpha * np.sum(abs(B)) +
-                   0.5 * beta * np.sum(B**2) + gamma * np.sum(abs(S)))
-
-
-
-        # Verbose
-        if verbose and n_iter % 10 == 0:
-            print("Iteration:  %s, Objective:  %s" % (n_iter, obj[n_iter]))
-
+        obj.append(objective)
 
         # Break if obj is not improving anymore
-        if n_iter > 0 and abs(obj[-1]-obj[-2]) / obj[-1] < tol:
+        if n_iter > 0 and abs(obj[-2] - obj[-1]) / obj[-1] < tol:
             break
 
         # Next iter
         n_iter += 1
 
-    eigvals = Dtilde / (m-1)
-    return B, A, S, eigvals, obj
+    eigen_values = Dtilde / (m-1)
+
+    return B, A, eigen_values, obj
 
 
-
-
-
-def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, regularizer='l1',
-          tol=1e-5, verbose=0, oversample=50, n_subspace=2, n_blocks=1, random_state=None):
+def compute_rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, regularizer='l1',
+          tol=1e-5, oversample=50, n_subspace=2, n_blocks=1, robust=False, random_state=None):
     r"""Randomized Sparse Principal Component Analysis (rSPCA).
 
     Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
@@ -376,6 +248,10 @@ def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, regularizer='l1',
     eigvals : array_like, `(n_components)`.
         Eigenvalues correspnding to the extracted components.
 
+    S : array_like, `(m, n)`.
+        Sparse component which captures grossly corrupted entries in the data
+        matrix. Returned only if `robust == True`
+
     obj : array_like, `(n_iter)`.
         Objective value at the i-th iteration.
 
@@ -393,11 +269,11 @@ def rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, regularizer='l1',
         n_blocks=n_blocks, random_state=random_state)
 
     # Compute Sparse PCA
-    B, A, eigvals, obj = spca(Xcompressed, n_components=n_components,
-                              alpha=alpha, beta=beta, regularizer=regularizer,
-                              max_iter=max_iter, tol=tol, verbose=verbose)
+    B, A, eigen_values, obj = compute_spca(
+        Xcompressed, n_components=n_components, alpha=alpha, beta=beta,
+        regularizer=regularizer, max_iter=max_iter, tol=tol, robust=robust)
 
     # rescale eigen values
-    eigvals = eigvals * (n_components + oversample - 1) / (m-1)
+    eigen_values *= (n_components + oversample - 1) / (m-1)
 
-    return B, A, eigvals, obj
+    return B, A, eigen_values, obj
