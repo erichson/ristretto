@@ -12,6 +12,7 @@ from __future__ import division
 
 import numpy as np
 from scipy import linalg
+from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 
 from .qb import compute_rqb
@@ -230,7 +231,7 @@ def get_vandermonde(A, l):
     return np.fliplr(np.vander(l, N=A.shape[1]))
 
 
-class DMD(object):
+class DMD(BaseEstimator):
 
     def __init__(self, rank=None, dt=1, modes='exact', order=True):
         self.rank = rank

@@ -13,6 +13,8 @@ from __future__ import division
 
 import numpy as np
 from scipy import linalg
+from sklearn.base import BaseEstimator
+from sklearn.utils.validation import check_is_fitted
 
 from .qb import compute_rqb
 from .utils import soft_l0, soft_l1
@@ -173,8 +175,9 @@ def compute_spca(X, n_components=None, alpha=0.1, beta=1e-5, gamma=0.1,
     return B, A, eigen_values, obj
 
 
-def compute_rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, regularizer='l1',
-          tol=1e-5, oversample=50, n_subspace=2, n_blocks=1, robust=False, random_state=None):
+def compute_rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000,
+                  regularizer='l1', tol=1e-5, oversample=50, n_subspace=2,
+                  n_blocks=1, robust=False, random_state=None):
     r"""Randomized Sparse Principal Component Analysis (rSPCA).
 
     Given a mean centered rectangular matrix `A` with shape `(m, n)`, SPCA
@@ -277,3 +280,72 @@ def compute_rspca(X, n_components, alpha=0.1, beta=0.1, max_iter=1000, regulariz
     eigen_values *= (n_components + oversample - 1) / (m-1)
 
     return B, A, eigen_values, obj
+
+
+class SPCA(BaseEstimator):
+
+    def __init__(self, n_components=None, alpha=0.1, beta=1e-5, gamma=0.1,
+                 robust=False, regularizer='l1', max_iter=1e3, tol=1e-5):
+        self.n_components = n_components
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.robust = robust
+        self.regularizer = regularizer
+        self.max_iter = max_iter
+        self.tol = tol
+
+    def _fit(self, X):
+        return compute_spca(
+            X, n_components=self.n_components, alpha=self.alpha, beta=self.beta,
+            gamma=self.gamma, robust=self.robust, regularizer=self.regularizer,
+            max_iter=self.max_iter, tol=self.tol)
+
+    def _transform(self, X, B):
+        # TODO: CHECK!
+        return X.dot(B)
+
+    def _inverse_transform(self, X, A):
+        # TODO: CHECK!
+        return X.dot(A.T)
+
+    def fit(self, X):
+        self.B_, self.A_, self.eigen_values_, self.obj_ = self._fit(X)
+        return self
+
+    def fit_transform(self, X):
+        B, A, eigen_values, obj = compute_spca(
+            X, n_components=self.n_components, alpha=self.alpha, beta=self.beta,
+            gamma=self.gamma, robust=self.robust, regularizer=self.regularizer,
+            max_iter=self.max_iter, tol=self.tol)
+        return self._transform(X, B)
+
+    def transform(self, X):
+        check_is_fitted(self, ['B_'])
+        return self._transform(X, self.B_)
+
+    def inverse_transform(self, X):
+        check_is_fitted(self, ['A_'])
+        return self._inverse_transform(X, self.A_)
+
+
+class RSPCA(SPCA):
+
+    def __init__(self, n_components=None, alpha=0.1, beta=1e-5, gamma=0.1,
+                 robust=False, regularizer='l1', max_iter=1e3, tol=1e-5,
+                 oversample=50, n_subspace=2, n_blocks=1, random_state=None):
+        super(RSPCA, self).__init__(
+            n_components=n_components, alpha=alpha,  beta=beta, gamma=gamma,
+            robust=robust, regularizer=regularizer, max_iter=max_iter, tol=tol)
+        self.oversample = oversample
+        self.n_subspace = n_subspace
+        self.n_blocks = n_blocks
+        self.random_state = random_state
+
+    def _fit(self, X):
+        return compute_rspca(
+            X, n_components=self.n_components, alpha=self.alpha, beta=self.beta,
+            gamma=self.gamma, robust=self.robust, regularizer=self.regularizer,
+            max_iter=self.max_iter, tol=self.tol, oversample=self.oversample,
+            n_subspace=self.n_subspace, n_blocks=self.n_blocks,
+            random_state=self.random_state)
