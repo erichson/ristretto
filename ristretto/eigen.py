@@ -21,7 +21,7 @@ from .utils import conjugate_transpose
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 
 
-def reigh(A, rank, oversample=10, n_subspace=2, random_state=None):
+def compute_reigh(A, rank, oversample=10, n_subspace=2, random_state=None):
     """Randomized eigendecompostion.
 
     The quality of the approximation can be controlled via the oversampling
@@ -89,7 +89,7 @@ def reigh(A, rank, oversample=10, n_subspace=2, random_state=None):
     return w[:rank], Q.dot(v)[:,:rank]
 
 
-def reigh_nystroem(A, rank, oversample=10, n_subspace=2, random_state=None):
+def compute_reigh_nystroem(A, rank, oversample=10, n_subspace=2, random_state=None):
     """Randomized eigendecompostion using the Nystroem method.
 
     The quality of the approximation can be controlled via the oversampling
@@ -175,7 +175,7 @@ def reigh_nystroem(A, rank, oversample=10, n_subspace=2, random_state=None):
     return w[:rank]**2, v[:,:rank]
 
 
-def reigh_nystroem_col(A, rank, oversample=0, random_state=None):
+def compute_reigh_nystroem_col(A, rank, oversample=0, random_state=None):
     """Randomized eigendecompostion using the Nystroem method.
 
     The quality of the approximation can be controlled via the oversampling
