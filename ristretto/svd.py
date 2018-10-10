@@ -128,6 +128,10 @@ class RSVD(BaseEstimator):
         self.sparse = sparse
         self.random_state = random_state
 
+    def _transform(self, U, s):
+        # TODO: CHECK!
+        return U * s
+
     def fit(self, X, y=None):
         '''y is for compatibility with other estimators, y is ignored'''
         self.U_, self.s_, self.Vt = compute_rsvd(
@@ -136,16 +140,12 @@ class RSVD(BaseEstimator):
         return self
 
     def fit_transform(self, X):
-        U, s, Vt = compute_rsvd(
-            X, self.rank, oversample=self.oversample, n_subspace=self.n_subspace,
-            sparse=self.sparse, random_state=self.random_state)
-        # TODO: CHECK!
-        return U * s
+        self.fit(X)
+        return self._transform(self.U_ * self.s_)
 
     def transform(self, X):
         check_is_fitted(self, ['U_', 's_'])
-        # TODO: CHECK!
-        return self.U_ * self.s_
+        return self._transform(self.U_ * self.s_)
 
     def inverse_transform(self, X):
         check_is_fitted(self, ['Vt_'])

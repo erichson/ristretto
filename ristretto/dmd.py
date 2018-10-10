@@ -1,4 +1,5 @@
 # TODO: add docs for DMD and RDMD
+# TODO: complete class methods (fit_transform, transform, inverse_transform)
 # TODO: change function/class attribute names to be consistent
 #       (ie l == amplitudes)
 """
@@ -7,7 +8,6 @@ Dynamic Mode Decomposition (DMD).
 # Authors: N. Benjamin Erichson
 #          Joseph Knox
 # License: GNU General Public License v3.0
-
 from __future__ import division
 
 import numpy as np
@@ -239,25 +239,37 @@ class DMD(BaseEstimator):
         self.modes = modes
         self.order = order
 
-    def fit(self, A):
+    def fit(self, X, y=None):
         '''Fits DMD'''
-        self.A_ = np.asarray_chkfinite(A)
+        self.X_ = np.asarray_chkfinite(X)
         self.F_, self.l_, self.omega_ = compute_dmd(
-            self.A_, rank=self.rank, dt=self.dt, modes=self.modes,
+            self.X_, rank=self.rank, dt=self.dt, modes=self.modes,
             order=self.order)
         return self
 
     @property
     def amplitudes_(self):
         '''Compute amplitueds b using least-squares: Fb=x1'''
-        check_is_fitted(self, ['A_', 'F_'])
-        return get_amplitudes(self.A_, self.F_)
+        check_is_fitted(self, ['X_', 'F_'])
+        return get_amplitudes(self.X_, self.F_)
 
     @property
     def vandermonde_(self):
         '''Compute Vandermonde matrix'''
-        check_is_fitted(self, ['A_', 'l_'])
-        return get_vandermonde(self.A_, self.l_)
+        check_is_fitted(self, ['X_', 'l_'])
+        return get_vandermonde(self.X_, self.l_)
+
+    def fit_transform(self, X):
+        '''TODO: Not Implemented'''
+        raise NotImplementedError
+
+    def transform(self, X):
+        '''TODO: Not Implemented'''
+        raise NotImplementedError
+
+    def inverse_transform(self, X):
+        '''TODO: Not Implemented'''
+        raise NotImplementedError
 
 
 class RDMD(DMD):
@@ -269,10 +281,10 @@ class RDMD(DMD):
         self.n_subspace = n_subspace
         self.random_state = random_state
 
-    def fit(self, A):
-        self.A_ = np.asarray_chkfinite(A)
+    def fit(self, X):
+        self.X_ = np.asarray_chkfinite(X)
         self.F_, self.l_, self.omega_ = compute_rdmd(
-            self.A_, rank=self.rank, dt=self.dt, oversample=self.oversample,
+            self.X_, rank=self.rank, dt=self.dt, oversample=self.oversample,
             n_subspace=self.n_subspace, modes=self.modes, order=self.order,
             random_state=self.random_state)
         return self

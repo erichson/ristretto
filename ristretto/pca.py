@@ -295,30 +295,20 @@ class SPCA(BaseEstimator):
         self.max_iter = max_iter
         self.tol = tol
 
-    def _fit(self, X):
-        return compute_spca(
-            X, n_components=self.n_components, alpha=self.alpha, beta=self.beta,
-            gamma=self.gamma, robust=self.robust, regularizer=self.regularizer,
-            max_iter=self.max_iter, tol=self.tol)
-
     def _transform(self, X, B):
         # TODO: CHECK!
         return X.dot(B)
 
-    def _inverse_transform(self, X, A):
-        # TODO: CHECK!
-        return X.dot(A.T)
-
     def fit(self, X):
-        self.B_, self.A_, self.eigen_values_, self.obj_ = self._fit(X)
-        return self
-
-    def fit_transform(self, X):
-        B, A, eigen_values, obj = compute_spca(
+        self.B_, self.A_, self.eigen_values_, self.obj_ = compute_spca(
             X, n_components=self.n_components, alpha=self.alpha, beta=self.beta,
             gamma=self.gamma, robust=self.robust, regularizer=self.regularizer,
             max_iter=self.max_iter, tol=self.tol)
-        return self._transform(X, B)
+        return self
+
+    def fit_transform(self, X):
+        self.fit(X)
+        return self._transform(X, self.B_)
 
     def transform(self, X):
         check_is_fitted(self, ['B_'])
@@ -326,7 +316,8 @@ class SPCA(BaseEstimator):
 
     def inverse_transform(self, X):
         check_is_fitted(self, ['A_'])
-        return self._inverse_transform(X, self.A_)
+        # TODO: CHECK!
+        return X.dot(self.A_.T)
 
 
 class RSPCA(SPCA):
@@ -342,10 +333,11 @@ class RSPCA(SPCA):
         self.n_blocks = n_blocks
         self.random_state = random_state
 
-    def _fit(self, X):
-        return compute_rspca(
+    def fit(self, X):
+        self.B_, self.A_, self.eigen_values_, self.obj_ = compute_rspca(
             X, n_components=self.n_components, alpha=self.alpha, beta=self.beta,
             gamma=self.gamma, robust=self.robust, regularizer=self.regularizer,
             max_iter=self.max_iter, tol=self.tol, oversample=self.oversample,
             n_subspace=self.n_subspace, n_blocks=self.n_blocks,
             random_state=self.random_state)
+        return self
