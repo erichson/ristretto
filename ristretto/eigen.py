@@ -7,8 +7,8 @@ Randomized Singular Value Decomposition
 
 # TODO: repace nystroem_col with random uniform sampling
 # TODO: conform functions to return like scipy.linalg.eig and rename
-
-from __future__ import division, print_function
+from __future__ import division
+import warnings
 
 import numpy as np
 from scipy import linalg
@@ -150,8 +150,9 @@ def reigh_nystroem(A, rank, oversample=10, n_subspace=2, random_state=None):
     try:
         # Cholesky factorizatoin
         C = linalg.cholesky(B2, lower=True, overwrite_a=True, check_finite=False)
-    except:
-        print("Cholesky factorizatoin has failed, because array is not positive definite.")
+    except LinAlgError:
+        warnings.warn("Cholesky factorizatoin has failed, because array is not "
+                      "positive definite. Using SVD instead.")
         # Eigendecompositoin
         w, v = linalg.eigh(B2, eigvals_only=False, overwrite_a=True,
                            turbo=True, eigvals=None, type=1, check_finite=False)
@@ -245,8 +246,9 @@ def reigh_nystroem_col(A, rank, oversample=0, random_state=None):
     try:
         # Cholesky factorizatoin
         C = linalg.cholesky(B2, lower=True, overwrite_a=True, check_finite=False)
-    except:
-        print("Cholesky factorizatoin has failed, because array is not positive definite.")
+    except LinAlgError:
+        warnings.warn("Cholesky factorizatoin has failed, because array is not "
+                      "positive definite. Using SVD instead.")
         # Eigendecompositoin
         U, s, _ = linalg.svd(B2, full_matrices=False, overwrite_a=True, check_finite=False)
 
