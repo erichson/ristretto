@@ -63,9 +63,9 @@ def test_DMD():
     dmd = DMD(rank=2)
     dmd.fit(A)
 
-    assert np.allclose(A, A_tilde(dmd.A_, dmd.F_, dmd.l_), atol_float64)
-    assert np.allclose(dmd.amplitudes_, get_amplitudes(dmd.A_, dmd.F_))
-    assert np.allclose(dmd.vandermonde_, get_vandermonde(dmd.A_, dmd.l_))
+    assert np.allclose(A, A_tilde(dmd.X_, dmd.F_, dmd.l_), atol_float64)
+    assert np.allclose(dmd.amplitudes_, get_amplitudes(dmd.X_, dmd.F_))
+    assert np.allclose(dmd.vandermonde_, get_vandermonde(dmd.X_, dmd.l_))
 
 
 # =============================================================================
@@ -76,4 +76,4 @@ def test_RDMD():
     rdmd = RDMD(rank=2)
     rdmd.fit(A)
 
-    assert np.allclose(A, A_tilde(rdmd.A_, rdmd.F_, rdmd.l_), atol_float64)
+    assert np.allclose(A, A_tilde(rdmd.X_, rdmd.F_, rdmd.l_), atol_float64)
