@@ -17,8 +17,7 @@ from .qb import compute_rqb
 from .utils import conjugate_transpose
 
 
-def compute_rsvd(A, rank, oversample=10, n_subspace=2, sparse=False,
-                 random_state=None):
+def compute_rsvd(A, rank, oversample=10, n_subspace=2, n_blocks=1, sparse=False, random_state=None):
     """Randomized Singular Value Decomposition.
 
     Randomized algorithm for computing the approximate low-rank singular value
@@ -48,6 +47,11 @@ def compute_rsvd(A, rank, oversample=10, n_subspace=2, sparse=False,
     n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
+
+    n_blocks : integer, default: 1.
+        If `n_blocks > 1` a column blocked QB decomposition procedure will be
+        performed. A larger number requires less fast memory, while it
+        leads to a higher computational time.
 
     sparse : boolean, optional (default: False)
         If sparse == True, perform compressed rsvd.
@@ -89,32 +93,20 @@ def compute_rsvd(A, rank, oversample=10, n_subspace=2, sparse=False,
     and GPU architectures" (2015).
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
-    # converts A to array, raise ValueError if A has inf or nan
-    A = np.asarray_chkfinite(A)
     m, n = A.shape
-
-    flipped = False
-    if m < n:
-        A = conjugate_transpose(A)
-        m, n = A.shape
-        flipped = True
 
     # Compute QB decomposition
     Q, B = compute_rqb(A, rank, oversample=oversample, n_subspace=n_subspace,
-                       sparse=sparse, random_state=random_state)
+                       n_blocks=n_blocks, sparse=sparse, random_state=random_state)
 
     # Compute SVD
     U, s, Vt = linalg.svd(B, compute_uv=True, full_matrices=False,
-                          overwrite_a=True, check_finite=False)
+                           overwrite_a=True, check_finite=False)
 
     # Recover right singular vectors
     U = Q.dot(U)
 
     # Return Trunc
-    if flipped:
-        return conjugate_transpose(Vt)[:, :rank], s[:rank], \
-            conjugate_transpose(U)[:rank, :]
-
     return U[:, :rank], s[:rank], Vt[:rank, :]
 
 
