@@ -4,7 +4,6 @@ Randomized LU Decomposition
 # Authors: N. Benjamin Erichson
 #          Joseph Knox
 # License: GNU General Public License v3.0
-
 from __future__ import division
 
 import numpy as np
@@ -16,7 +15,7 @@ from .sketch.utils import perform_subspace_iterations
 from .utils import conjugate_transpose
 
 
-def rlu(A, rank, oversample=10, n_subspace=2, permute=False, random_state=None):
+def compute_rlu(A, rank, oversample=10, n_subspace=2, permute=False, random_state=None):
     """Randomized LU Decomposition.
 
     Randomized algorithm for computing the approximate low-rank LU
@@ -112,4 +111,5 @@ def rlu(A, rank, oversample=10, n_subspace=2, permute=False, random_state=None):
         _, c ,_ = sparse.find(C)
         return L_tilde.dot(conjugate_transpose(U))[r,:], conjugate_transpose(L)[:,c]
 
-    return P, L_tilde.dot(conjugate_transpose(U)), conjugate_transpose(L), conjugate_transpose(C)
+    return P, L_tilde.dot(conjugate_transpose(U)), conjugate_transpose(L),\
+        conjugate_transpose(C)

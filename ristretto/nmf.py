@@ -4,21 +4,23 @@ Nonnegative Matrix Factorization.
 # Authors: N. Benjamin Erichson
 #          Joseph Knox
 # License: GNU General Public License v3.0
-
-from __future__ import division, print_function
+from __future__ import division
 
 import numpy as np
 from scipy import linalg
 
-from .externals.cdnmf_fast import _update_cdnmf_fast as _fhals_update_shuffle
-from .externals.nmf import _initialize_nmf
+from sklearn.decomposition.cdnmf_fast import _update_cdnmf_fast
+from sklearn.decomposition.nmf import _initialize_nmf
+from sklearn.utils import check_random_state
+
+from .qb import compute_rqb
 
 _VALID_DTYPES = (np.float32, np.float64)
 
 
-def nmf(A, rank, init='nndsvd', shuffle=False,
-        l2_reg_H=0.0, l2_reg_W=0.0, l1_reg_H=0.0, l1_reg_W=0.0,
-        tol=1e-5, maxiter=200, random_state=None, verbose=False):
+def compute_nmf(A, rank, init='nndsvd', shuffle=False,
+                l2_reg_H=0.0, l2_reg_W=0.0, l1_reg_H=0.0, l1_reg_W=0.0,
+                tol=1e-5, maxiter=200, random_state=None):
     """Nonnegative Matrix Factorization.
 
     Hierarchical alternating least squares algorithm
@@ -118,75 +120,64 @@ def nmf(A, rank, init='nndsvd', shuffle=False,
     >>> import ristretto as ro
     >>> W, H = ro.nmf(X, rank=2)
     """
+    random_state = check_random_state(random_state)
+
     # converts A to array, raise ValueError if A has inf or nan
     A = np.asarray_chkfinite(A)
     m, n = A.shape
 
-    if (A < 0).any():
+    if np.any(A < 0):
         raise ValueError("Input matrix with nonnegative elements is required.")
 
-    if random_state is None or isinstance(random_state, int):
-            rns = np.random.RandomState(random_state)
-    elif isinstance(random_state, np.random.RandomState):
-            rns = random_state
-    else:
-        raise ValueError('Seed should be None, int or np.random.RandomState')
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Initialization methods for factor matrices W and H
     # 'normal': nonnegative standard normal random init
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    W, H = _initialize_nmf(A, rank, init=init, eps=1e-6, random_state=rns)
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    W, H = _initialize_nmf(A, rank, init=init, eps=1e-6, random_state=random_state)
     Ht = np.array(H.T, order='C')
 
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Iterate the HALS algorithm until convergence or maxiter is reached
     # i)   Update factor matrix H and normalize columns
     # ii)  Update low-dimensional factor matrix W
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    violation = 0.0
     for niter in range(maxiter):
-        violation = 0.0
 
         # Update factor matrix H with regularization
         WtW = W.T.dot(W)
-        WtW.flat[::rank + 1] += l2_reg_H # adds l2_reg only on the diagonal
+        WtW.flat[::rank + 1] += l2_reg_H  # adds l2_reg only on the diagonal
         AtW = A.T.dot(W) - l1_reg_H
 
         # compute violation update
-        permutation = rns.permutation(rank) if shuffle else np.arange(rank)
-        violation += _fhals_update_shuffle(Ht, WtW, AtW, permutation)
+        permutation = random_state.permutation(rank) if shuffle else np.arange(rank)
+        violation = _update_cdnmf_fast(Ht, WtW, AtW, permutation)
 
         # Update factor matrix W with regularization
         HHt = Ht.T.dot(Ht)
         HHt.flat[::rank + 1] += l2_reg_W # adds l2_reg only on the diagonal
+
         AHt = A.dot(Ht) - l1_reg_W
 
         # compute violation update
-        permutation = rns.permutation(rank) if shuffle else np.arange(rank)
-        violation += _fhals_update_shuffle(W, HHt, AHt, permutation)
+        permutation = random_state.permutation(rank) if shuffle else np.arange(rank)
+        violation += _update_cdnmf_fast(W, HHt, AHt, permutation)
 
         # Compute stopping condition.
         if niter == 0:
+            if violation == 0: break
             violation_init = violation
 
-        if violation_init == 0:
-            break
-
-        fitchange = violation / violation_init
-
-        if verbose == True and niter % 10 == 0:
-            print('Iteration: %s fit: %s, fitchange: %s' %(niter, violation, fitchange))
-
-        if fitchange <= tol:
+        if violation / violation_init <= tol:
             break
 
     # Return factor matrices
     return W, Ht.T
 
 
-def rnmf(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=False,
-         l2_reg_H=0.0, l2_reg_W=0.0, l1_reg_H=0.0, l1_reg_W=0.0,
-         tol=1e-5, maxiter=200, random_state=None, verbose=False):
+def compute_rnmf(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=False,
+                 l2_reg_H=0.0, l2_reg_W=0.0, l1_reg_H=0.0, l1_reg_W=0.0,
+                 tol=1e-5, maxiter=200, random_state=None):
     """
     Randomized Nonnegative Matrix Factorization.
 
@@ -302,12 +293,14 @@ def rnmf(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=False,
     >>> import ristretto as ro
     >>> W, H = ro.rnmf(X, rank=2, oversample=0)
     """
+    random_state = check_random_state(random_state)
+
     # converts A to array, raise ValueError if A has inf or nan
     A = np.asarray_chkfinite(A)
     m, n = A.shape
 
     flipped = False
-    if n > m :
+    if n > m:
         A = A.T
         m, n = A.shape
         flipped = True
@@ -316,53 +309,21 @@ def rnmf(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=False,
         raise ValueError('A.dtype must be one of %s, not %s'
                          % (' '.join(_VALID_DTYPES), A.dtype))
 
-    if (A < 0).any():
+    if np.any(A < 0):
         raise ValueError("Input matrix with nonnegative elements is required.")
 
-    if random_state is None or isinstance(random_state, int):
-        rns = np.random.RandomState(random_state)
-    elif isinstance(random_state, np.random.RandomState):
-        rns = random_state
-    else:
-        raise ValueError('Seed should be None, int or np.random.RandomState')
+    Q, B = compute_rqb(A, rank, oversample=oversample,
+                       n_subspace=n_subspace, random_state=random_state)
 
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # Compute QB decomposition
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #Build sample matrix Y : Y = A * Omega, where Omega is a random test matrix
-    Omega = rns.rand(n, rank+oversample).astype(A.dtype)
-    Y = A.dot(Omega)
-    del Omega
-
-    #If n_subspace > 0 perfrom n_subspace subspace iterations
-    for i in range(n_subspace):
-        Y , _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True)
-        Z , _ = linalg.qr(A.T.dot(Y), mode='economic', check_finite=False, overwrite_a=True)
-        Y = A.dot(Z)
-    del Z
-
-    #Orthogonalize Y using economic QR decomposition: Y = QR
-    Q , _ = linalg.qr( Y,  mode='economic', check_finite=False, overwrite_a=True)
-
-    #Project input data to low-dimensional space
-    B = Q.T.dot(A)
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # Initialization methods for factor matrices W and H
-    # 'normal': nonnegative standard normal random init
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    W, H = _initialize_nmf(A, rank, init=init, eps=1e-6, random_state=rns)
+    #  Initialization methods for factor matrices W and H
+    W, H = _initialize_nmf(A, rank, init=init, eps=1e-6, random_state=random_state)
     Ht = np.array(H.T, order='C')
     W_tilde = Q.T.dot(W)
     del A
 
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # Iterate the HALS algorithm until convergence or maxiter is reached
-    # i)   Update factor matrix H
-    # ii)  Update factor matrix W
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #  Iterate the HALS algorithm until convergence or maxiter is reached
+    violation = 0.0
     for niter in range(maxiter):
-        violation = 0.0
 
         # Update factor matrix H
         WtW = W.T.dot(W)
@@ -370,8 +331,8 @@ def rnmf(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=False,
         BtW = B.T.dot(W_tilde) - l1_reg_H
 
         # compute violation update
-        permutation = rns.permutation(rank) if shuffle else np.arange(rank)
-        violation += _fhals_update_shuffle(Ht, WtW, BtW, permutation)
+        permutation = random_state.permutation(rank) if shuffle else np.arange(rank)
+        violation = _update_cdnmf_fast(Ht, WtW, BtW, permutation)
 
         # Update factor matrix W
         HHt = Ht.T.dot(Ht)
@@ -381,32 +342,19 @@ def rnmf(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=False,
         BHt = Q.dot(B.dot(Ht)) - l1_reg_W
 
         # compute violation update
-        permutation = rns.permutation(rank) if shuffle else np.arange(rank)
-        violation += _fhals_update_shuffle(W, HHt, BHt, permutation)
+        permutation = random_state.permutation(rank) if shuffle else np.arange(rank)
+        violation += _update_cdnmf_fast(W, HHt, BHt, permutation)
 
         # Project W to low-dimensional space
         W_tilde = Q.T.dot(W)
 
         # Compute stopping condition.
         if niter == 0:
+            if violation == 0: break
             violation_init = violation
 
-        if violation_init == 0:
+        if violation / violation_init <= tol:
             break
-
-        fitchange = violation / violation_init
-
-        if verbose:
-            show = 10 if niter < 100 else 50
-            if niter % show == 0:
-                print('Iteration: %s fit: %s, fitchange: %s'
-                      % (niter+1, violation, fitchange))
-
-        if fitchange <= tol:
-            break
-
-    if verbose:
-        print('Iteration: %d, fit: %s, fitchange: %s' % (niter, violation, fitchange))
 
     # Return factor matrices
     if flipped:

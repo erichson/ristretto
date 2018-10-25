@@ -4,19 +4,18 @@ Interpolative decomposition (ID)
 # Authors: N. Benjamin Erichson
 #          Joseph Knox
 # License: GNU General Public License v3.0
-
 from __future__ import division
 
 import numpy as np
 from scipy import linalg
 
-from .qb import rqb
+from .qb import compute_rqb
 from .utils import conjugate_transpose
 
 _VALID_MODES = ('row', 'column')
 
 
-def interp_decomp(A, rank, mode='column', index_set=False):
+def compute_interp_decomp(A, rank, mode='column', index_set=False):
     """Interpolative decomposition (ID).
 
     Algorithm for computing the low-rank ID
@@ -107,7 +106,7 @@ def interp_decomp(A, rank, mode='column', index_set=False):
     return conjugate_transpose(V), conjugate_transpose(C)
 
 
-def rinterp_decomp(A, rank, oversample=10, n_subspace=2, mode='column',
+def compute_rinterp_decomp(A, rank, oversample=10, n_subspace=2, mode='column',
                    index_set=False, random_state=None):
     """Randomized interpolative decomposition (rID).
 
@@ -190,10 +189,11 @@ def rinterp_decomp(A, rank, oversample=10, n_subspace=2, mode='column',
         A = conjugate_transpose(A)
 
     # compute QB factorization
-    Q, B = rqb(A, rank, oversample=oversample, n_subspace=n_subspace, random_state=random_state)
+    Q, B = compute_rqb(A, rank, oversample=oversample, n_subspace=n_subspace,
+                       random_state=random_state)
 
     # Deterministic ID
-    J, V = interp_decomp(B, rank, mode='column', index_set=True)
+    J, V = compute_interp_decomp(B, rank, mode='column', index_set=True)
     J = J[:rank]
 
     # Return ID

@@ -1,6 +1,10 @@
 # generated doctrees
 docs/generated
 
+# temp files
+*.sw[p,o]
+*.mypy_cache
+
 # Created by https://www.gitignore.io/api/python
 
 ### Python ###

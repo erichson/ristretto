@@ -1,8 +1,7 @@
 import numpy as np
 
-from ristretto.pca import spca
-from ristretto.pca import rspca
-from ristretto.pca import robspca
+from ristretto.pca import compute_spca
+from ristretto.pca import compute_rspca
 
 from .utils import relative_error
 
@@ -29,8 +28,8 @@ def get_A():
 def test_spca():
     A = get_A()
 
-    Bstar, Astar, eigvals, obj = spca(A, n_components=3, max_iter=100,
-                                      alpha=alpha, beta=beta, verbose=0)
+    Bstar, Astar, eigvals, obj = compute_spca(A, n_components=3, max_iter=100,
+                                      alpha=alpha, beta=beta)
 
     A_pca = A.dot(Bstar).dot(Astar.T)
     assert relative_error(A, A_pca) < atol_float16
@@ -43,8 +42,8 @@ def test_robspca():
     gamma  = 10
     A = get_A()
 
-    Bstar, Astar, S, eigvals, obj = robspca(A, n_components=3, max_iter=100,
-                                            alpha=alpha, beta=beta, gamma=gamma, verbose=0)
+    Bstar, Astar, eigvals, obj = compute_spca(A, n_components=3, max_iter=100, robust=True,
+                                              alpha=alpha, beta=beta, gamma=gamma)
 
     A_pca = A.dot(Bstar).dot(Astar.T)
     assert relative_error(A, A_pca) < atol_float16
@@ -56,9 +55,9 @@ def test_robspca():
 def test_rspca():
     A = get_A()
 
-    Bstar, Astar, eigvals, obj = rspca(A, n_components=3, oversample=10,
+    Bstar, Astar, eigvals, obj = compute_rspca(A, n_components=3, oversample=10,
                                        n_subspace=2, max_iter=100,
-                                       alpha=alpha, beta=beta, verbose=0)
+                                       alpha=alpha, beta=beta)
 
     A_pca = A.dot(Bstar).dot(Astar.T)
     assert relative_error(A, A_pca) < atol_float16

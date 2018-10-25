@@ -1,22 +1,24 @@
+# TODO: improve docs (especially for classes)
+# TODO: write tests for RSVD class
 """
 Random Singular Value Decomposition.
 """
-
 # Authors: N. Benjamin Erichson
 #          Joseph Knox
 # License: GNU General Public License v3.0
-
 from __future__ import division
 
 import numpy as np
 from scipy import linalg
-from scipy import sparse
+from sklearn.base import BaseEstimator
+from sklearn.utils.validation import check_is_fitted
 
-from .qb import rqb
+from .qb import compute_rqb
 from .utils import conjugate_transpose
 
 
-def rsvd(A, rank, oversample=10, n_subspace=2, sparse=False, random_state=None):
+def compute_rsvd(A, rank, oversample=10, n_subspace=2, sparse=False,
+                 random_state=None):
     """Randomized Singular Value Decomposition.
 
     Randomized algorithm for computing the approximate low-rank singular value
@@ -94,12 +96,12 @@ def rsvd(A, rank, oversample=10, n_subspace=2, sparse=False, random_state=None):
     flipped = False
     if m < n:
         A = conjugate_transpose(A)
-        m , n = A.shape
+        m, n = A.shape
         flipped = True
 
     # Compute QB decomposition
-    Q, B = rqb(A, rank, oversample=oversample, n_subspace=n_subspace,
-               sparse=sparse, random_state=random_state)
+    Q, B = compute_rqb(A, rank, oversample=oversample, n_subspace=n_subspace,
+                       sparse=sparse, random_state=random_state)
 
     # Compute SVD
     U, s, Vt = linalg.svd(B, compute_uv=True, full_matrices=False,
@@ -110,6 +112,42 @@ def rsvd(A, rank, oversample=10, n_subspace=2, sparse=False, random_state=None):
 
     # Return Trunc
     if flipped:
-        return conjugate_transpose(Vt)[:, :rank], s[:rank], conjugate_transpose(U)[:rank, :]
+        return conjugate_transpose(Vt)[:, :rank], s[:rank], \
+            conjugate_transpose(U)[:rank, :]
 
     return U[:, :rank], s[:rank], Vt[:rank, :]
+
+
+class RSVD(BaseEstimator):
+
+    def __init__(self, rank, oversample=10, n_subspace=2, sparse=False,
+                 random_state=None):
+        self.rank = rank
+        self.oversample = oversample
+        self.n_subspace = n_subspace
+        self.sparse = sparse
+        self.random_state = random_state
+
+    def _transform(self, U, s):
+        # TODO: CHECK!
+        return U * s
+
+    def fit(self, X, y=None):
+        '''y is for compatibility with other estimators, y is ignored'''
+        self.U_, self.s_, self.Vt = compute_rsvd(
+            X, self.rank, oversample=self.oversample, n_subspace=self.n_subspace,
+            sparse=self.sparse, random_state=self.random_state)
+        return self
+
+    def fit_transform(self, X):
+        self.fit(X)
+        return self._transform(self.U_ * self.s_)
+
+    def transform(self, X):
+        check_is_fitted(self, ['U_', 's_'])
+        return self._transform(self.U_ * self.s_)
+
+    def inverse_transform(self, X):
+        check_is_fitted(self, ['Vt_'])
+        # TODO: CHECK!
+        return X.dot(self.Vt_)

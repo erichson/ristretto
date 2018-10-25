@@ -4,47 +4,7 @@ Utility Functions.
 # Authors: N. Benjamin Erichson
 #          Joseph Knox
 # License: GNU General Public License v3.0
-from functools import partial
-import numbers
-
 import numpy as np
-import scipy.sparse as sp
-
-
-def check_non_negative(X, whom):
-    # NOTE: copied from scikit-learn
-    """Check if there is any negative value in an array.
-    Parameters
-    ----------
-    X : array-like or sparse matrix
-    Input data.
-    whom : string
-    Who passed X to this function.
-    """
-    X = X.data if sp.issparse(X) else X
-    if (X < 0).any():
-        raise ValueError("Negative values in data passed to %s" % whom)
-
-
-def check_random_state(seed):
-    # NOTE: copied from scikit-learn
-    """Turn seed into a np.random.RandomState instance
-    Parameters
-    ----------
-    seed : None | int | instance of RandomState
-    If seed is None, return the RandomState singleton used by np.random.
-    If seed is an int, return a new RandomState instance seeded with seed.
-    If seed is already a RandomState instance, return it.
-    Otherwise raise ValueError.
-    """
-    if seed is None or seed is np.random:
-        return np.random.mtrand._rand
-    if isinstance(seed, (numbers.Integral, np.integer)):
-        return np.random.RandomState(seed)
-    if isinstance(seed, np.random.RandomState):
-        return seed
-    raise ValueError('%r cannot be used to seed a numpy.random.RandomState'
-    ' instance' % seed)
 
 
 def conjugate_transpose(A):
@@ -52,35 +12,6 @@ def conjugate_transpose(A):
     if A.dtype == np.complexfloating:
         return A.conj().T
     return A.T
-
-
-def safe_sparse_dot(a, b, dense_output=False):
-    # NOTE: copied from scikit-learn
-    """Dot product that handle the sparse matrix case correctly
-
-    Uses BLAS GEMM as replacement for numpy.dot where possible
-    to avoid unnecessary copies.
-
-    Parameters
-    ----------
-    a : array or sparse matrix
-    b : array or sparse matrix
-    dense_output : boolean, default False
-        When False, either ``a`` or ``b`` being sparse will yield sparse
-        output. When True, output will always be an array.
-
-    Returns
-    -------
-    dot_product : array or sparse matrix
-        sparse if ``a`` or ``b`` is sparse and ``dense_output=False``.
-    """
-    if sp.issparse(a) or sp.issparse(b):
-        ret = a * b
-        if dense_output and hasattr(ret, "toarray"):
-            ret = ret.toarray()
-        return ret
-    else:
-        return np.dot(a, b)
 
 
 def nmf_data(m, n, k, factor_type='normal', noise_type='normal', noiselevel=0):
@@ -108,3 +39,13 @@ def nmf_data(m, n, k, factor_type='normal', noise_type='normal', noiselevel=0):
     Anoisy += noiselevel * np.maximum(0, np.random.standard_normal((m,n)))
 
     return A, Anoisy
+
+
+def soft_l0(arr, thresh):
+    idx = arr**2 < 2 * thresh
+    arr[idx] = 0
+    return arr
+
+
+def soft_l1(arr, thresh):
+    return np.sign(arr) * np.maximum(np.abs(arr) - thresh, 0)

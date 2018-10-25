@@ -4,16 +4,15 @@ CUR-ID
 # Authors: N. Benjamin Erichson
 #          Joseph Knox
 # License: GNU General Public License v3.0
-
 from __future__ import division
 
 import numpy as np
 from scipy import linalg
 
-from .interp_decomp import interp_decomp, rinterp_decomp
+from .interp_decomp import compute_interp_decomp, compute_rinterp_decomp
 
 
-def cur(A, rank=None, index_set=False):
+def compute_cur(A, rank=None, index_set=False):
     """CUR decomposition.
 
     Algorithm for computing the low-rank CUR
@@ -57,13 +56,13 @@ def cur(A, rank=None, index_set=False):
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
     # compute column ID
-    J, V = interp_decomp(A, rank, mode='column', index_set=True)
+    J, V = compute_interp_decomp(A, rank, mode='column', index_set=True)
 
     # select column subset
     C = A[:, J]
 
     # compute row ID of C
-    Z, I = interp_decomp(C, rank, mode='row', index_set=True)
+    Z, I = compute_interp_decomp(C, rank, mode='row', index_set=True)
 
     # select row subset
     R = A[I, :]
@@ -77,7 +76,7 @@ def cur(A, rank=None, index_set=False):
     return C, U, R
 
 
-def rcur(A, rank, oversample=10, n_subspace=2, index_set=False, random_state=None):
+def compute_rcur(A, rank, oversample=10, n_subspace=2, index_set=False, random_state=None):
     """Randomized CUR decomposition.
 
     Randomized algorithm for computing the approximate low-rank CUR
@@ -139,15 +138,17 @@ def rcur(A, rank, oversample=10, n_subspace=2, index_set=False, random_state=Non
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
     # Compute column ID
-    J, V = rinterp_decomp(A, rank, oversample=oversample, n_subspace=n_subspace,
-                          mode='column', index_set=True, random_state=random_state)
+    J, V = compute_rinterp_decomp(
+        A, rank, oversample=oversample, n_subspace=n_subspace, mode='column',
+        index_set=True, random_state=random_state)
 
     # Select column subset
     C = A[:, J]
 
     # Compute row ID of C
-    Z, I = rinterp_decomp(A, rank, oversample=oversample, n_subspace=n_subspace,
-                          mode='row', index_set=True, random_state=random_state)
+    Z, I = compute_rinterp_decomp(
+        A, rank, oversample=oversample, n_subspace=n_subspace, mode='row',
+        index_set=True, random_state=random_state)
 
     # Select row subset
     R = A[I, :]

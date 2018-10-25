@@ -7,20 +7,21 @@ Randomized Singular Value Decomposition
 
 # TODO: repace nystroem_col with random uniform sampling
 # TODO: conform functions to return like scipy.linalg.eig and rename
-
-from __future__ import division, print_function
+from __future__ import division
+import warnings
 
 import numpy as np
 from scipy import linalg
+from sklearn.utils import check_random_state
 
 from .sketch.transforms import johnson_lindenstrauss, randomized_uniform_sampling
 from .sketch.utils import perform_subspace_iterations
-from .utils import check_random_state, conjugate_transpose
+from .utils import conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
 
 
-def reigh(A, rank, oversample=10, n_subspace=2, random_state=None):
+def compute_reigh(A, rank, oversample=10, n_subspace=2, random_state=None):
     """Randomized eigendecompostion.
 
     The quality of the approximation can be controlled via the oversampling
@@ -88,7 +89,7 @@ def reigh(A, rank, oversample=10, n_subspace=2, random_state=None):
     return w[:rank], Q.dot(v)[:,:rank]
 
 
-def reigh_nystroem(A, rank, oversample=10, n_subspace=2, random_state=None):
+def compute_reigh_nystroem(A, rank, oversample=10, n_subspace=2, random_state=None):
     """Randomized eigendecompostion using the Nystroem method.
 
     The quality of the approximation can be controlled via the oversampling
@@ -149,8 +150,9 @@ def reigh_nystroem(A, rank, oversample=10, n_subspace=2, random_state=None):
     try:
         # Cholesky factorizatoin
         C = linalg.cholesky(B2, lower=True, overwrite_a=True, check_finite=False)
-    except:
-        print("Cholesky factorizatoin has failed, because array is not positive definite.")
+    except LinAlgError:
+        warnings.warn("Cholesky factorizatoin has failed, because array is not "
+                      "positive definite. Using SVD instead.")
         # Eigendecompositoin
         w, v = linalg.eigh(B2, eigvals_only=False, overwrite_a=True,
                            turbo=True, eigvals=None, type=1, check_finite=False)
@@ -173,7 +175,7 @@ def reigh_nystroem(A, rank, oversample=10, n_subspace=2, random_state=None):
     return w[:rank]**2, v[:,:rank]
 
 
-def reigh_nystroem_col(A, rank, oversample=0, random_state=None):
+def compute_reigh_nystroem_col(A, rank, oversample=0, random_state=None):
     """Randomized eigendecompostion using the Nystroem method.
 
     The quality of the approximation can be controlled via the oversampling
@@ -244,8 +246,9 @@ def reigh_nystroem_col(A, rank, oversample=0, random_state=None):
     try:
         # Cholesky factorizatoin
         C = linalg.cholesky(B2, lower=True, overwrite_a=True, check_finite=False)
-    except:
-        print("Cholesky factorizatoin has failed, because array is not positive definite.")
+    except LinAlgError:
+        warnings.warn("Cholesky factorizatoin has failed, because array is not "
+                      "positive definite. Using SVD instead.")
         # Eigendecompositoin
         U, s, _ = linalg.svd(B2, full_matrices=False, overwrite_a=True, check_finite=False)
 
