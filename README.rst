@@ -28,34 +28,33 @@ ristretto: Package Overview  |Travis|_ |Codecov|_ |Readthedocs|_
 The Python software library ristretto provides a collection of randomized matrix
 algorithms which can be used for dimension reduction. Overview of implemented routines:
 
-* Randomized singular value decomposition: ``from ristretto.svd import rsvd``.
-* Randomized interpolative decomposition:``from ristretto.interp_decomp import rinterp_decomp``.
-* Randomized CUR decomposition: ``from ristretto.cur import rcur``.
-* Randomized LU decompositoin: ``from ristretto.lu import rlu``.
-* Randomized nonnegative matrix factorization: ``from ristretto.nmf import rnmf_fhals``.
+* Randomized singular value decomposition:``from ristretto.svd import compute_rsvd``.
+* Randomized interpolative decomposition:``from ristretto.interp_decomp import compute_rinterp_decomp``.
+* Randomized CUR decomposition: ``from ristretto.cur import compute_rcur``.
+* Randomized LU decompositoin: ``from ristretto.lu import compute_rlu``.
+* Randomized nonnegative matrix factorization: ``from ristretto.nmf import compute_rnmf_fhals``.
 
 Get started
 -----------
-
-Quick Installation via PIP
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-To install the latest stable release of ristretto run::
-
-   $ pip install ristretto
-
-computational advantage becomes pronounced with increasing matrix dimensions.
-
 
 Obtaining the Latest Software via GIT
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 To get the latest stable and development versions of ristretto run::
 
    $ git clone https://github.com/erichson/ristretto
+   
 
 Then, to build and install the package, run from within the main directory in
 the release::
 
    $ python setup.py install
+
+**Note** you will need the following 3rd party packages installed in your environment:
+
+* numpy
+* scipy
+* Cython
+* scikit-learn
 
 After successfully installing the ristretto library, the unit tests can be run by::
 
