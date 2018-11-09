@@ -55,6 +55,7 @@ the release::
 * scipy
 * Cython
 * scikit-learn
+* nose
 
 After successfully installing the ristretto library, the unit tests can be run by::
 
