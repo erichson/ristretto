@@ -322,11 +322,11 @@ class SPCA(BaseEstimator):
 
 class RSPCA(SPCA):
 
-    def __init__(self, n_components=None, alpha=0.1, beta=1e-5, gamma=0.1,
+    def __init__(self, n_components=None, alpha=0.1, beta=1e-5,
                  robust=False, regularizer='l1', max_iter=1e3, tol=1e-5,
                  oversample=50, n_subspace=2, n_blocks=1, random_state=None):
         super(RSPCA, self).__init__(
-            n_components=n_components, alpha=alpha,  beta=beta, gamma=gamma,
+            n_components=n_components, alpha=alpha,  beta=beta,
             robust=robust, regularizer=regularizer, max_iter=max_iter, tol=tol)
         self.oversample = oversample
         self.n_subspace = n_subspace
@@ -336,7 +336,7 @@ class RSPCA(SPCA):
     def fit(self, X):
         self.B_, self.A_, self.eigen_values_, self.obj_ = compute_rspca(
             X, n_components=self.n_components, alpha=self.alpha, beta=self.beta,
-            gamma=self.gamma, robust=self.robust, regularizer=self.regularizer,
+            robust=self.robust, regularizer=self.regularizer,
             max_iter=self.max_iter, tol=self.tol, oversample=self.oversample,
             n_subspace=self.n_subspace, n_blocks=self.n_blocks,
             random_state=self.random_state)
