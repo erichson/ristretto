@@ -150,7 +150,7 @@ def compute_reigh_nystroem(A, rank, oversample=10, n_subspace=2, random_state=No
     try:
         # Cholesky factorizatoin
         C = linalg.cholesky(B2, lower=True, overwrite_a=True, check_finite=False)
-    except LinAlgError:
+    except linalg.LinAlgError:
         warnings.warn("Cholesky factorizatoin has failed, because array is not "
                       "positive definite. Using SVD instead.")
         # Eigendecompositoin
