@@ -1,7 +1,7 @@
 import numpy as np
 
-from ristretto.pca import compute_spca
-from ristretto.pca import compute_rspca
+from ristretto.spca import compute_spca
+from ristretto.spca import compute_rspca
 
 from .utils import relative_error
 
