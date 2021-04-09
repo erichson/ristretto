@@ -75,7 +75,7 @@ def compute_spca(X, n_components=None, alpha=0.1, beta=1e-5, gamma=0.1,
 
     Notes
     -----
-    Variable Projection for SPCA solves the following optimization problem:
+    Variable Projection for PCA solves the following optimization problem:
     minimize :math:`1/2 \| X - X B A^T \|^2 + \alpha \|B\|_1 + 1/2 \beta \|B\|^2`
     """
     def compute_residual(X, B, A):

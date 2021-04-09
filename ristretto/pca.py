@@ -60,10 +60,6 @@ def compute_pca(X, n_components=None, svd_type="original", oversample=10, n_subs
     A : array_like, `(n, n_components)`.
         Orthogonal components extracted from the data.
 
-    Notes
-    -----
-    Variable Projection for SPCA solves the following optimization problem:
-    minimize :math:`1/2 \| X - X B A^T \|^2 + \alpha \|B\|_1 + 1/2 \beta \|B\|^2`
     """
 
     m, n = X.shape
