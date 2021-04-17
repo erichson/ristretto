@@ -17,4 +17,4 @@ import sys
 __version__ = '0.1.2'
 
 __all__ = ['cur', 'dmd', 'eigen', 'interp_decomp', 'lu', 'nmf', 'pca',
-           'qb', 'sketch', 'svd', 'utils']
+           'qb', 'sketch', 'spca', 'svd', 'utils']
